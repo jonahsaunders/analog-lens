@@ -228,7 +228,7 @@ class Integration(unittest.TestCase):
         self.set('char_channel', channel)
         self.call('characterization_readable')
         self.assertEqual(self.get('char_state'), 'completed', self.get('char_log'))
-        self.assertEqual(self.get('lut_file'), str(path))
+        self.assertEqual(str(self.get('lut_file')), str(path))
         self.assertGreater(int(self.c('llength', self.get('lut_rows'))), 0)
         self.assertIn('Loaded', self.get('char_status'))
         session = self.call('project_session_path', self.get('project_key'), str(self.directory))
