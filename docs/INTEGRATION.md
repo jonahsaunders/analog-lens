@@ -23,6 +23,7 @@ The testbench must write a raw file, for example:
 set filetype=ascii
 op
 write my_testbench.raw
+quit
 .endc
 ```
 
@@ -60,6 +61,8 @@ The last selected graph's local cursor and explicit dataset are used when availa
 4. Choose **Apply**, or **Apply & run OP** at the top level.
 
 Geometry changes use the verified symbol conventions: micron-valued `W/L` for SKY130, meter-suffixed `W/L` for GF180, and `w/l` for IHP. This implementation normalizes the proposed geometry to **one finger and one parallel copy**, setting the corresponding `nf/ng/mult/m` properties to 1. It does not infer a multifinger layout strategy. The preview makes that normalization explicit.
+
+Device discovery uses xschem's hierarchy navigation. If a hierarchical testbench has unsaved edits, xschem may ask you to save before descending, including when preparing device saves or choosing **Apply & run OP**. **Apply** alone does not traverse or save. Save the parent when prompted to retain its edits during hierarchy navigation.
 
 All property edits form **one xschem Undo** operation. The extension does not save the schematic automatically. At a subcircuit level, apply and save your edits, then return to the top-level testbench to rerun. A named pre-edit baseline is kept when device results are available.
 

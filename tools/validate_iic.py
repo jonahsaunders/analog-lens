@@ -77,7 +77,7 @@ def make_testbench(pdk, base, out):
     top = HEADER + mos + labels(pins, ground=True)
     top += f'C {{{out / "al_child.sym"}}} 300 0 0 0 {{name=x1}}\n' + labels(child_pins, 300, ground=True)
     top += f'C {{devices/code_shown.sym}} -300 -250 0 0 {{name=BIAS only_toplevel=false value="{bias}"}}\n'
-    flow = '.control\nset filetype=ascii\nalter vd 0.7\nop\nwrite top.raw\n.endc'
+    flow = '.control\nset filetype=ascii\nalter vd 0.7\nop\nwrite top.raw\nquit\n.endc'
     top += f'C {{devices/code_shown.sym}} -300 200 0 0 {{name=FLOW only_toplevel=true value="{flow}"}}\n'
     schematic = out / 'top.sch'; schematic.write_text(top)
     rc = out / 'xschemrc'

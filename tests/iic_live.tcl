@@ -4,6 +4,8 @@ set live_stage startup
 proc stage {name} {set ::live_stage $name; puts "LIVE STAGE: $name"}
 proc fail {message} {
     puts stderr "LIVE CHECK FAILED: $message"
+    catch {puts stderr "Open windows: [winfo children .]"}
+    catch {capture_live [xschem get topwindow] failure.png}
     if {[info exists ::analog_lens::run_log]} {puts stderr $::analog_lens::run_log}
     exit 1
 }
@@ -73,6 +75,9 @@ if {[catch {
     require {[winfo toplevel $panel] eq [xschem get topwindow]} {Inspector is not embedded in xschem.}
     require {[winfo width $panel] > 200 && [winfo height $panel] > 200} {Embedded inspector has no usable geometry.}
     ::analog_lens::hide_sidebar; ::analog_lens::show_sidebar; update
+    # xschem asks to save a modified parent before hierarchy traversal.
+    # This is a generated testbench; persist its tested annotation explicitly.
+    xschem save
 
     # Use native simulation and retain the caller callback and .control alterations.
     stage native-simulation
@@ -81,8 +86,14 @@ if {[catch {
     set sim(spice,0,fg) 0
     set sim(spice,0,st) 0
     dict set ::analog_lens::integration_options result_analysis auto
+    # PDK startup files can enable a modal netlist viewer. The native
+    # simulation contract does not require a person to close that viewer.
+    set netlist_show 0
+    stage native-netlist
     xschem netlist
+    stage native-launch
     set native_id [simulate {set ::native_callback_seen 1}]
+    stage native-completion
     set deadline [expr {[clock milliseconds]+90000}]
     while {[info exists ::execute(pipe,$native_id)]} {
         require {[clock milliseconds] < $deadline} {Native simulator exceeded 90 seconds.}
