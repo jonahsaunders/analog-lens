@@ -6,6 +6,7 @@ namespace eval ::analog_lens {
     variable project_defaults {}; variable project_memory {}; variable project_saved {}; variable project_blocked {}
     variable project_last_save 0; variable edit_revisions {}; variable edit_traces {}
     variable native_stack {}; variable native_jobs {}; variable native_pending {}; variable native_message {}
+    variable netlist_states {}
     variable sidebar {}; variable sidebar_title {Select a transistor}; variable sidebar_metrics {}
     variable freshness {Results not verified against this schematic}; variable cursor_message {}; variable cursor_key {}
     variable sidebar_open 0; variable sidebar_owner {}; variable integration_watch {}
@@ -130,6 +131,24 @@ proc ::analog_lens::native_deck {original saves} {
     # Insert after the SPICE title, before controls can start an analysis.
     return [join [linsert $lines $insert [string trim $block \n]] \n]
 }
+proc ::analog_lens::observe_netlist {command code result operation} {
+    if {[lindex $command 1] ne "netlist" || $code || $result eq "1"} {return}
+    # Record the source when the deck is generated, not when Simulate is
+    # clicked: Simulate alone can run an old deck after schematic edits.
+    catch {
+        if {[xschem get currsch] != 0} {return}
+        lassign [native_paths] directory deck
+        foreach arg [lrange $command 2 end] {
+            if {[string match -* $arg]} {continue}
+            if {[file pathtype $arg] eq "relative"} {set arg [file join $directory $arg]}
+            if {[file normalize $arg] ne $deck} {return}
+            break
+        }
+        if {[file isfile $deck]} {
+            dict set ::analog_lens::netlist_states $deck [dict create signature [raw_signature $deck] stamp [design_stamp]]
+        }
+    }
+}
 proc ::analog_lens::native_enter {command operation} {
     # A trace must never interrupt the user's simulator or callback.
     set job {}
@@ -137,6 +156,9 @@ proc ::analog_lens::native_enter {command operation} {
         if {[get $::analog_lens::integration_options auto_results] && [xschem get netlist_type] eq "spice" && [xschem get currsch] == 0} {
             project_sync
             lassign [native_paths] directory deck
+            set stamp {}
+            set state [get $::analog_lens::netlist_states $deck]
+            if {[get $state signature] eq [raw_signature $deck]} {set stamp [get $state stamp]}
             set before {}; foreach path [glob -nocomplain -directory $directory *.raw] {dict set before $path [raw_signature $path]}
             set configured [get $::analog_lens::integration_options result_path]
             if {$configured ne {}} {
@@ -150,12 +172,15 @@ proc ::analog_lens::native_enter {command operation} {
                 try {
                     set saves [save_lines [collect_devices]]
                     if {$saves ne {}} {atomic_write $deck [native_deck [read_text $deck] $saves]}
+                    if {$stamp ne {}} {
+                        dict set ::analog_lens::netlist_states $deck signature [raw_signature $deck]
+                    }
                 } finally {incr ::analog_lens::integration_internal -1}
             }
             set job [dict create context [context] project $::analog_lens::project_key directory $directory \
                 before $before preferred $configured default [file rootname $deck].raw \
                 analysis [get $::analog_lens::integration_options result_analysis] \
-                metadata [dict merge [capture_metadata] [dict create design_stamp [design_stamp] input_deck [file_signature $deck] source native-simulation]]]
+                metadata [dict merge [capture_metadata] [dict create design_stamp $stamp input_deck [file_signature $deck] source native-simulation]]]
             set ::analog_lens::native_message {xschem simulation running… Results will be checked when it finishes.}
         }
     } why]} {set ::analog_lens::native_message "Automatic results unavailable: $why"; set job {}}
@@ -424,6 +449,7 @@ proc ::analog_lens::start_integration {} {
     if {$::analog_lens::integration_started} {return}
     set ::analog_lens::integration_started 1
     set ::analog_lens::project_defaults [session_data]
+    trace add execution ::xschem leave ::analog_lens::observe_netlist
     if {[llength [info commands ::simulate]]} {
         trace add execution ::simulate enter ::analog_lens::native_enter
         trace add execution ::simulate leave ::analog_lens::native_leave

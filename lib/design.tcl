@@ -35,7 +35,7 @@ proc ::analog_lens::compatible_slices {device} {
         lassign $slice lp lm corner temp vds vsb width
         if {[llength [condition_differences $conditions [dict create pdk $lp corner $corner temp_c $temp vds_v $vds vsb_v $vsb]]]} {continue}
         set mismatch 0
-        foreach metric {vds vbs} bias [list $vds [expr {-$vsb}]] {
+        foreach metric {terminal_vds terminal_vbs} bias [list $vds [expr {-$vsb}]] {
             set measured [number [get [get $device values] $metric]]
             # xschem's raw API has limited precision; allow 10 ppm or 1 µV.
             if {$measured ne {} && abs($measured-$bias) > max(1e-6,abs($bias)*1e-5)} {set mismatch 1}

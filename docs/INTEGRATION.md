@@ -45,7 +45,7 @@ The project directory is the nearest parent containing `xschemrc`, or the testbe
 
 State is saved atomically after changes, approximately every two seconds, on project switches, and on normal shutdown. **Save session…** remains available for an explicit portable snapshot. A corrupt or mismatched automatic session is preserved; the sidebar reports that it needs attention. A read-only project keeps state in memory and reports the save problem. Unsaved testbenches do not create project files. Moving the project to another path requires opening its old session explicitly.
 
-The source-state indicator distinguishes recorded current results, results made stale by schematic edits, and imports whose source state is unverified. xschem edit notifications cover changes within the current testbench hierarchy, including sizing and Undo. A run retains its starting state, so edits made while it runs do not make its results appear current. External changes to included model files are not comprehensively watched: rerun after changing external dependencies.
+The source-state indicator distinguishes recorded current results, results made stale by schematic edits, and imports whose source state is unverified. xschem edit notifications cover changes within the current testbench hierarchy, including sizing and Undo. An isolated run retains its starting state. Native runs retain the state observed when xschem generated the deck, so clicking Simulate alone after edits cannot make an old deck appear current. Decks generated before the extension loaded, externally modified decks, and host netlisting paths not observed through the Tcl command remain unverified until netlisted again through Run testbench or the Netlist button. External changes to included model files are not comprehensively watched: rerun after changing external dependencies.
 
 ## Waveform cursor B
 
@@ -66,7 +66,7 @@ Device discovery uses xschem's hierarchy navigation. If a hierarchical testbench
 
 All property edits form **one xschem Undo** operation. The extension does not save the schematic automatically. At a subcircuit level, apply and save your edits, then return to the top-level testbench to rerun. A named pre-edit baseline is kept when device results are available.
 
-Application is refused if the selected instance, its properties, target inputs or lookup file changed since preview. Unsupported models, array elements, parameterized dimensions, different PDK/model conditions, known measured bias mismatches and the `DEMO_ONLY` lookup are not applied. Measured voltage matching allows 10 ppm or 1 µV for xschem's transport precision. Unknown corner/temperature/body-bias conditions still need verification.
+Application is refused if the selected instance, its properties, target inputs or lookup file changed since preview. Unsupported models, array elements, parameterized dimensions, different PDK/model conditions, known measured bias mismatches and the `DEMO_ONLY` lookup are not applied. Measured voltage matching uses schematic terminal voltages, not internal model voltages affected by series resistance. It allows 10 ppm or 1 µV for xschem's transport precision. If terminal vectors were not saved, that bias remains unverified. Unknown corner/temperature/body-bias conditions still need verification.
 
 Width scaling remains an estimate. Existing parasitic formulas are retained, and fixed parasitic values require review after changing geometry. Resimulate and inspect the baseline comparison before accepting the result.
 

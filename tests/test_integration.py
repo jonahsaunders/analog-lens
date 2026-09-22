@@ -142,6 +142,23 @@ class Integration(unittest.TestCase):
         self.assertEqual(before, self.c('set', '::mock::raw_file'))
         self.assertIn('not complete successfully', self.get('native_message'))
 
+    def test_native_freshness_uses_netlist_state_not_later_schematic_edits(self):
+        self.call('start_integration')
+        self.c('xschem', 'netlist')
+        original = self.call('design_stamp')
+        key = self.get('project_key')
+        self.c('dict', 'incr', '::analog_lens::edit_revisions', key)
+        self.call('native_enter', 'simulate', 'enter')
+        job = self.c('lindex', self.get('native_stack'), 'end')
+        self.assertEqual(self.c('dict', 'get', job, 'metadata', 'design_stamp'), original)
+        self.assertNotEqual(original, self.call('design_stamp'))
+        # Externally changed decks have no verifiable schematic stamp.
+        deck = self.directory/'a.spice'
+        deck.write_text(deck.read_text()+'\n* changed outside xschem\n')
+        self.call('native_enter', 'simulate', 'enter')
+        job = self.c('lindex', self.get('native_stack'), 'end')
+        self.assertEqual(str(self.c('dict', 'get', job, 'metadata', 'design_stamp')), '')
+
     def test_cursor_follows_nonuniform_samples_and_retains_provenance(self):
         self.c('set', '::hostfixture::rawtype', 'tran'); self.set('result_metadata', '')
         self.call('refresh')
@@ -178,9 +195,15 @@ class Integration(unittest.TestCase):
 
     def test_known_measured_bias_mismatch_cannot_be_applied(self):
         self.load_compatible()
-        self.c('dict', 'set', '::mock::vectors', 'v(@m.xm1.m0[vds])', .8)
+        self.c('dict', 'set', '::mock::vectors', 'v(vd)', .8)
         self.call('refresh')
         with self.assertRaises(tk.TclError): self.call('make_size_plan')
+
+    def test_lookup_bias_uses_external_terminals_not_intrinsic_model_voltage(self):
+        self.load_compatible()
+        self.c('dict', 'set', '::mock::vectors', 'v(@m.xm1.m0[vds])', .8999)
+        self.call('refresh')
+        self.call('make_size_plan')
 
     def test_matching_lookup_selection_does_not_guess_between_biases(self):
         self.load_compatible(); self.call('auto_select_lookup')

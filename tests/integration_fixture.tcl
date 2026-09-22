@@ -5,7 +5,10 @@ namespace eval ::hostfixture {
     variable cursor 0; variable axis {0 0.25 1}; variable gm {0.0004 0.0008 0.0016}
 }
 rename xschem fixture_xschem
+dict set ::mock::vectors v(vd) 0.9
 proc xschem {command args} {
+    if {$command eq "instance_net"} {return [dict get {d vd s 0 b 0} [string tolower [lindex $args 1]]]}
+    if {$command eq "resolved_net"} {return [lindex $args 0]}
     if {$command eq "translate" && [lindex $args 0] eq "M1"} {return [dict get $::hostfixture::props model]}
     if {$command eq "get"} {
         switch -- [lindex $args 0] {

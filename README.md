@@ -1,12 +1,12 @@
 # Analog Lens for xschem
 
-A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu and a resizable analysis window inside xschem's process. No browser, server, account, or Python service is required.
+A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
 
 Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
 This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
 
-**Validation:** 82 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
+**Validation:** 84 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
 
 ## Interface preview
 
@@ -147,7 +147,7 @@ Omit `--variable` for flat MAT fields. Add `--cgg-is-total` only if `CGG` alread
 - `gm/(2πCgg)` is an approximate device fT; it is not measured circuit bandwidth.
 - gm/gds is intrinsic transistor gain; it is not loaded stage or loop gain.
 - gm/Id target limits are editable design checks, not universal weak/moderate/strong inversion boundaries.
-- AC gain, stability, noise, transient settling, Monte Carlo, automatic sizing optimization, and automated characterization are not implemented in this release.
+- AC gain, stability, noise, transient settling, Monte Carlo, and automatic circuit optimization are not implemented. Characterization covers the documented MOS profiles and fixed-bias gate sweeps.
 
 ## Tests
 

@@ -105,12 +105,13 @@ if {[catch {
     require {[file tail [::analog_lens::raw rawfile]] eq "top.raw"} "Native results were not attached: $::analog_lens::native_message"
     ::analog_lens::refresh
     set native_values [dict get [lindex $::analog_lens::records 0] values]
-    require {abs([dict get $native_values vds]-0.7) < 1e-5} {Native .control alter command was not preserved.}
+    require {abs([dict get $native_values terminal_vds]-0.7) < 1e-5} {Native .control alter command was not preserved.}
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) native.csv]
     ::analog_lens::update_freshness
     require {[string match {Current*} $::analog_lens::freshness]} "Native source state incorrect: $::analog_lens::freshness"
     set host [xschem get topwindow]
     wm geometry $host 1360x900+20+20; update; xschem zoom_full 0 0.8
+    xschem unselect_all; xschem select instance M1
     ::analog_lens::refresh_sidebar
     capture_live $host integrated-inspector.png
 

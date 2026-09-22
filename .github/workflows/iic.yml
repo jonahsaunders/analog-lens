@@ -26,3 +26,4 @@ jobs:
           name: iic-integration-report
           path: build/iic
           if-no-files-found: error
+          include-hidden-files: true # Generated project sessions and characterization provenance.

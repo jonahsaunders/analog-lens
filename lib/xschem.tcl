@@ -57,8 +57,36 @@ proc ::analog_lens::measure {device} {
         if {![catch {raw value $vector $sample $dataset} value]} {dict set values $metric [number $value]}
     }
     set out [dict merge $device $resolution]
-    dict set out values [metrics $values [get $device family] [get $device type]]
+    dict set out values [dict merge [metrics $values [get $device family] [get $device type]] [terminal_bias $device]]
     return $out
+}
+proc ::analog_lens::terminal_bias {device} {
+    # Model-internal Vds can differ from external bias due to series resistance.
+    # Compare characterized bias only with measured schematic terminal voltages.
+    if {[get $device type] ni {nmos pmos} || [get $device name] ne [get $device owner]} {return {}}
+    set volts {}
+    foreach pin {d s b} {
+        set node {}
+        foreach spelling [list $pin [string toupper $pin]] {
+            if {![catch {xschem instance_net [get $device owner] $spelling} candidate] && $candidate ne {}} {set node $candidate; break}
+        }
+        if {$node eq {} || [string first , $node] >= 0} {continue}
+        if {[catch {xschem resolved_net $node} node]} {continue}
+        set node [string tolower [string trimleft $node .]]
+        if {$node eq "0"} {dict set volts $pin 0; continue}
+        foreach vector [list $node "v($node)"] {
+            if {![catch {raw value $vector $::analog_lens::sample $::analog_lens::dataset} value] && [number $value] ne {}} {
+                dict set volts $pin $value; break
+            }
+        }
+    }
+    set bias {}
+    if {[dict exists $volts s]} {
+        foreach pin {d b} metric {terminal_vds terminal_vbs} {
+            if {[dict exists $volts $pin]} {dict set bias $metric [expr {[dict get $volts $pin]-[dict get $volts s]}]}
+        }
+    }
+    return $bias
 }
 proc ::analog_lens::refresh {} {
     variable records; variable index; variable status; variable active_context; variable sample; variable dataset
