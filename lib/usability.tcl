@@ -25,7 +25,9 @@ proc ::analog_lens::quantity {value kind} {
     if {![dict exists $factors $suffix]} {error "Unit '$suffix' does not match $kind."}
     set result [expr {$n*[dict get $factors $suffix]}]
     if {[number $result] eq {}} {error {The converted value is outside the finite numeric range.}}
-    return [format %.12g $result]
+    # Tcl's canonical numeric representation keeps full double precision and
+    # avoids turning 0.3 into a different string key such as 0.29999999999999999.
+    return $result
 }
 proc ::analog_lens::quantity_list {text kind} {
     # Join unit words to their preceding number before separating a list.

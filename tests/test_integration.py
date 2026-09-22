@@ -472,3 +472,20 @@ class Integration(unittest.TestCase):
         self.c('set','::mock::selection','M2')
         self.call('refresh_workspace')
         self.assertEqual(int(self.c('dict','size',self.get('size_plan'))),0)
+
+    def test_unit_normalization_preserves_characterized_target_precision(self):
+        text='3322.435674156947'
+        self.assertEqual(float(self.call('quantity',text,'gm')),float(text))
+        self.assertAlmostEqual(float(self.call('quantity','3.322435674156947mS','gm')),float(text),places=10)
+        path=self.load_compatible()
+        # Use a deliberately non-round measured point to catch precision loss
+        # before upward grid rounding; all values are synthetic test fixtures.
+        path.write_text(path.read_text().replace('0.0008,','0.0008123456789123456,'))
+        rows=self.call('parse_lut',path.read_text());self.set('lut_rows',rows)
+        point=rows[1]
+        self.set('target_gmid',self.c('dict','get',point,'gmid'))
+        self.set('target_gm_u',2e6*float(self.c('dict','get',point,'gm_s')))
+        self.set('target_fingers',1);self.set('target_copies',1)
+        plan=self.call('make_size_plan')
+        geometry=self.c('dict','get',plan,'geometry')
+        self.assertAlmostEqual(float(self.c('dict','get',geometry,'width')),20,places=10)

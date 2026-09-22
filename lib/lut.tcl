@@ -90,6 +90,9 @@ proc ::analog_lens::sizing {rows slice length gmid gm_u} {
         set previous $x
     }
     set curves [lut_curves $rows $slice density]
+    if {![dict exists $curves $length] && [number $length] ne {}} {
+        foreach key [dict keys $curves] {if {$key == $length} {set length $key; break}}
+    }
     if {![dict exists $curves $length]} {error "Choose a characterized length."}
     set density [interpolate_curve [dict get $curves $length] $gmid density]
     if {$density eq {} || $density <= 0} {error "Current density is unavailable."}
