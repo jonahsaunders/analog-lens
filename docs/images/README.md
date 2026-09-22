@@ -9,6 +9,10 @@ change to the extension's normal interface.
 |---|---|---|
 | `operating-point.png` | `tests/mock_xschem.tcl` | M1 selected, with M2 marked for review and missing parameters shown as `—` |
 | `gmid-explorer.png` | `examples/lookup-template.csv` | Intrinsic gain for two channel lengths, with the synthetic 0.3 µm / 16 V⁻¹ / 800 µS sizing example |
+| `compare-runs.png` | `tests/mock_xschem.tcl`, then a synthetic change to M1 gm | Baseline and current metrics, including a +25% gm/Id change |
+| `setup-help.png` | Default bias targets | Editable design checks and scrollable workflow/keyboard help |
+| `lookup-data.png` | `examples/lookup-template.csv` | Numeric snapshot of the plotted synthetic lookup values |
+| `run-log.png` | Explicitly labeled synthetic explanatory text | Log reading, tail following, copying, and closing |
 
 ## Regenerate
 
@@ -25,12 +29,21 @@ On an existing X11 display of at least 1440×1000, you can also run:
 python3 tools/capture_screenshots.py
 ```
 
-The script captures the 1380×940 application content area using the `clam`
-theme and a fixed Tk scale. Keep the application unobscured when using a
+The script captures the four tabs at 1380×940, the lookup-data dialog at
+760×440, and the log at 840×460, using the `clam` theme and a fixed Tk scale.
+Keep the application unobscured when using a
 normal desktop. Font rendering may vary between Linux distributions.
-It writes both PNGs to this directory. No xschem, ngspice, or PDK is required.
+It writes six PNGs to this directory. No xschem, ngspice, or PDK is required.
 The Python image dependency is only needed for this documentation utility.
 
-After regenerating, check both images for clipped labels and curves before
+For additional minimum-size, larger-text, empty-search, and dark-theme
+captures, choose a separate output directory:
+
+```sh
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/capture_screenshots.py \
+  --audit --output-dir /tmp/analog-lens-gui-audit
+```
+
+After regenerating, check all images for clipped labels and curves before
 committing them. These captures demonstrate widget rendering; they do not
 replace the validation described in `PDK_SUPPORT.md` and `VALIDATION.md`.

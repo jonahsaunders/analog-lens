@@ -84,7 +84,7 @@ proc ::analog_lens::refresh {} {
 }
 proc ::analog_lens::load_results {} {
     variable sample; variable dataset; variable analysis_type
-    set file [tk_getOpenFile -title {Load ngspice simulation results} -filetypes {{{SPICE results} {.raw}} {{All files} *}}]
+    set file [tk_getOpenFile -parent $::analog_lens::window -title {Load ngspice simulation results} -filetypes {{{SPICE results} {.raw}} {{All files} *}}]
     if {$file eq {}} {return}
     read_results $file $analysis_type
     set sample 0; set dataset 0

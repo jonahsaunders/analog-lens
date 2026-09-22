@@ -6,7 +6,7 @@ proc ::mocktk::make {kind path args} {
     interp alias {} $path {} ::mocktk::dispatch $kind $path
     return $path
 }
-foreach kind {frame label button entry checkbutton combobox spinbox panedwindow notebook treeview scrollbar labelframe} {
+foreach kind {frame label button entry checkbutton combobox spinbox panedwindow notebook treeview scrollbar labelframe menubutton progressbar separator} {
     interp alias {} ::ttk::$kind {} ::mocktk::make $kind
 }
 foreach kind {toplevel text canvas menu} {interp alias {} ::$kind {} ::mocktk::make $kind}
@@ -33,11 +33,13 @@ proc ::mocktk::dispatch {kind path command args} {
     }
     return {}
 }
-proc winfo {command path} {
+proc winfo {command path args} {
     switch -- $command {
         exists {return [dict exists $::mocktk::widgets $path]}
         width {return 900}
         height {return 350}
+        reqwidth {return 100}
+        rgb {return {65535 65535 65535}}
     }
 }
 proc destroy {path} {
@@ -45,6 +47,21 @@ proc destroy {path} {
         if {$name eq $path || [string first "$path." $name] == 0} {dict unset ::mocktk::widgets $name;catch {rename $name {}}}
     }
 }
-foreach cmd {pack grid bind wm focus raise update} {proc ::$cmd {args} {return {}}}
+foreach cmd {pack grid place bind wm focus raise update} {proc ::$cmd {args} {return {}}}
 proc ::ttk::style {args} {return {}}
+namespace eval ::ttk::notebook {}
+proc ::ttk::notebook::enableTraversal {args} {}
+proc tk {command args} {return x11}
+proc font {command args} {
+    switch -- $command {
+        names {return {}}
+        actual {
+            if {[lindex $args 1] eq "-size"} {return 10}
+            return {-family Sans -size 10 -weight normal}
+        }
+        metrics {return 14}
+        measure {return 60}
+    }
+    return {}
+}
 proc exit {args} {set ::mocktk::exit_requested $args}

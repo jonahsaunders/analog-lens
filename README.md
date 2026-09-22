@@ -2,7 +2,7 @@
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu and a resizable analysis window inside xschem's process. No browser, server, account, or Python service is required.
 
-Version 0.1.0 is an initial implementation. The numerical engine, adapters, data parsing, and xschem API contracts have automated tests. The screenshots below show the real Tk interface with synthetic fixtures. Actual xschem/PDK simulations and GUI validation inside xschem require an IIC-OSIC-TOOLS installation; those were not available in the build environment. See `PDK_SUPPORT.md` for the exact support boundary.
+Version 0.2.0 adds a GUI usability update informed by Apple's Human Interface Guidelines. The numerical engine, adapters, data parsing, xschem API contracts, and native GUI interactions have automated tests. The screenshots below show the real Tk interface with synthetic fixtures. Actual xschem/PDK simulations and GUI validation inside xschem require an IIC-OSIC-TOOLS installation; those were not available in the build environment. See `PDK_SUPPORT.md` for the exact support boundary and the [GUI audit](docs/GUI_AUDIT.md) for findings, changes, and platform validation limits.
 
 ## Interface preview
 
@@ -11,6 +11,20 @@ Version 0.1.0 is an initial implementation. The numerical engine, adapters, data
 **Operating-point inspector.** Browse device results, spot devices needing review, and inspect the selected transistor. This is a native Tk capture using the repository's synthetic test fixture, not measured PDK results. Missing parameters remain `—`.
 
 See the [gm/Id explorer preview](#gmid-explorer) below. [Screenshot sources and regeneration instructions](docs/images/README.md) are included.
+
+The inspector and help text scroll, numeric columns sort in both directions, and search filters have a clear empty state. **Run log** updates while ngspice runs. **View data** in the explorer opens a copyable table of lookup values. The extension keeps the host's ttk theme and uses its system fonts; it does not change xschem's global theme.
+
+| Action | Linux / Windows | macOS binding |
+|---|---|---|
+| Find a device | Ctrl+F | Command+F |
+| Load results | Ctrl+O | Command+O |
+| Refresh | Ctrl+R | Command+R |
+| Run operating point | Ctrl+Shift+R | Command+Shift+R |
+| Export CSV | Ctrl+Shift+S | Command+Shift+S |
+| Switch tabs | Ctrl+1–4 | Command+1–4 |
+| Close Analog Lens | Ctrl+W | Command+W |
+
+Shortcuts apply while the Analog Lens window has focus. The **Sort** menu offers keyboard access to table sorting. Use Tab / Shift+Tab between controls and Return in a numeric form to apply it. macOS bindings are implemented but have not been exercised on Aqua/VoiceOver.
 
 ## Install in IIC-OSIC-TOOLS
 
@@ -81,7 +95,7 @@ Required columns:
 
 The file in `examples/lookup-template.csv` is **illustrative synthetic data**, explicitly labeled `DEMO_ONLY`. It is a format example, not a characterized PDK or a valid sizing database. Replace it with your characterization data.
 
-Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. Sizing does not automatically modify the schematic. There is no automatic PDK characterization in this version.
+Enable **Sizing estimate** to reveal the sizing form. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. Sizing does not automatically modify the schematic. There is no automatic PDK characterization in this version.
 
 ### Import existing MAT lookup data
 
@@ -112,6 +126,12 @@ python3 -m unittest discover -s tests -v
 ```
 
 These tests execute the real Tcl numerical/adapter logic through Python's Tcl interpreter, with fixture xschem commands for integration contracts. They do not substitute for PDK simulation validation.
+
+The native GUI interaction tests skip without an X11 display. To run the complete suite, including keyboard input, sorting, validation, minimum-size layout, and dark-theme checks:
+
+```sh
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 -m unittest discover -s tests -v
+```
 
 For the real native Tk widget/event smoke test in an IIC environment with `wish` and `xvfb-run`:
 
