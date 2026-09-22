@@ -23,10 +23,12 @@ proc ::analog_lens::property {inst names} {
     }
     return {}
 }
-proc ::analog_lens::scan {{hierarchy __AUTO__}} {
+proc ::analog_lens::scan {{hierarchy __AUTO__} {owner {}}} {
     if {$hierarchy eq "__AUTO__"} {set hierarchy {}; catch {set hierarchy [xschem get sim_sch_path]}}
     set result {}
-    for {set i 0} {$i < [xschem get instances]} {incr i} {
+    set instances [list $owner]
+    if {$owner eq {}} {set instances {}; for {set i 0} {$i < [xschem get instances]} {incr i} {lappend instances $i}}
+    foreach i $instances {
         set name [property $i {name}]
         set symbol [property $i {cell::name}]
         set type [property $i {cell::type}]
@@ -135,46 +137,16 @@ proc ::analog_lens::read_results {file type} {
         }
     }
 }
-proc ::analog_lens::walk_devices {{depth 0}} {
-    if {$depth > 48} {error "Hierarchy exceeds 48 levels; check for recursive symbols."}
-    set hierarchy [string trimleft [xschem get sch_path] .]
-    set result [scan $hierarchy]
-    set count [xschem get instances]
-    for {set i 0} {$i < $count} {incr i} {
-        if {[property $i {cell::type}] ne "subcircuit" || [property $i {spice_ignore}] eq "true"} {continue}
-        # A custom netlisting format may replace the implementation completely.
-        if {[property $i {spice_sym_def}] ne {}} {continue}
-        set name [property $i {name}]
-        set copies 1
-        catch {set copies [lindex [xschem expandlabel $name] 1]}
-        if {![string is integer -strict $copies] || $copies < 1} {set copies 1}
-        set base [xschem get currsch]
-        xschem unselect_all
-        xschem select instance $i
-        try {
-            set ok [xschem descend 1 2]
-            if {!$ok} {error "Cannot read subcircuit $name. Check its schematic before running analysis."}
-            for {set n 1} {$n <= $copies} {incr n} {
-                if {$n > 1} {xschem change_sch_path $n}
-                lappend result {*}[walk_devices [expr {$depth+1}]]
-            }
-        } finally {
-            while {[xschem get currsch] > $base} {xschem go_back 2}
-        }
+proc ::analog_lens::collect_devices {{deck {}}} {
+    # Read the netlist, never descend through the live editor or select objects.
+    if {$deck eq {}} {
+        if {![info exists ::netlist_dir]} {error {Set the simulation directory before discovering hierarchy.}}
+        file mkdir $::netlist_dir
+        set deck [file join $::netlist_dir analog-lens-discovery-[pid]-[clock clicks].spice]
+        incr ::analog_lens::integration_internal
+        try {xschem netlist $deck} finally {incr ::analog_lens::integration_internal -1}
     }
-    return $result
-}
-proc ::analog_lens::collect_devices {} {
-    set selected [xschem selected_set]
-    set keep_exists [info exists ::keep_symbols]
-    if {$keep_exists} {set saved_keep $::keep_symbols}
-    set ::keep_symbols 1
-    try {return [walk_devices]} finally {
-        if {$keep_exists} {set ::keep_symbols $saved_keep} else {unset ::keep_symbols}
-        xschem unselect_all
-        foreach inst $selected {catch {xschem select instance $inst}}
-        xschem redraw
-    }
+    return [project_helper devices $deck --pdk [active_pdk]]
 }
 proc ::analog_lens::op_deck {original saves rawfile} {
     # Preserve model includes, parameters, sources, and hierarchy. Replace only
@@ -211,8 +183,6 @@ proc ::analog_lens::run_op {} {
     set binary [auto_execok ngspice]
     if {$binary eq {}} {error "ngspice is not on PATH. Run xschem inside IIC-OSIC-TOOLS."}
     set run_context [context]
-    set run_devices [collect_devices]
-    if {![llength $run_devices]} {error "No supported transistor symbols were found in this testbench."}
     set directory [file normalize $::netlist_dir]
     file mkdir $directory
     # Every run gets new files, so a failed run cannot load stale results.
@@ -224,10 +194,13 @@ proc ::analog_lens::run_op {} {
     incr ::analog_lens::integration_internal
     try {xschem netlist $original} finally {incr ::analog_lens::integration_internal -1}
     if {![file isfile $original]} {error "xschem did not generate the analysis netlist."}
+    set run_devices [collect_devices $original]
+    if {![llength $run_devices]} {error {No supported transistors were found in the generated netlist.}}
     write_text $deck [op_deck [read_text $original] [save_lines $run_devices] $run_file]
     set run_metadata [dict merge [capture_metadata] [dict create analysis op sample 0 dataset 0 \
         run_context $run_context raw [file_signature $run_file] input_deck [file_signature $deck] \
         input_crc32 [format %08x [zlib crc32 [read_text $deck]]] design_stamp [design_stamp]]]
+    set run_metadata [recorded_conditions [dict merge $run_metadata [dependency_snapshot $deck]]]
     set run_log {}; set run_started [clock seconds]; set run_cancelled 0; set run_processes {}
     set previous [pwd]
     try {
@@ -280,6 +253,9 @@ proc ::analog_lens::run_readable {} {
         catch {atomic_write [file rootname $run_file].metadata $metadata}
         if {$run_state eq "completed" && [context] eq $run_context} {set result_metadata $metadata}
     }
+    if {$run_state eq "completed" && [context] eq $run_context} {
+        finish_result_run
+    } elseif {$run_state in {failed cancelled}} {verification_failed $run_state}
     if {[llength [info commands ::analog_lens::update_run_controls]]} {update_run_controls}
 }
 proc ::analog_lens::export_report {filename} {

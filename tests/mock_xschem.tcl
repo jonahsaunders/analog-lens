@@ -37,8 +37,9 @@ proc xschem {command args} {
         }
         translate {return nfet_03v3}
         netlist {
+            if {$::mock::hierarchy_test} {error {fixture netlisting error}}
             set f [open [lindex $args 0] w]
-            puts $f "Fixture circuit\nv1 vdd 0 1.8\n.control\ntran 1n 1u\n.endc\n.end"
+            puts $f "Fixture circuit\nv1 vdd 0 1.8\nXM1 d g 0 0 nfet_03v3 w=10u l=.5u\nXM2 d g 0 0 nfet_03v3 w=10u l=.5u\n.control\ntran 1n 1u\n.endc\n.end"
             close $f
         }
         expandlabel {return [list [lindex $args 0] 1]}

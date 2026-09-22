@@ -157,7 +157,9 @@ class Engine(unittest.TestCase):
         with self.assertRaises(tkinter.TclError):self.call('refresh')
     def test_collect_preserves_selection(self):
         self.t.call('source',str(ROOT/'tests/mock_xschem.tcl'))
-        self.call('collect_devices')
+        with tempfile.TemporaryDirectory(dir=TEST_TMP_ROOT) as temp:
+            self.t.setvar('netlist_dir', temp)
+            self.call('collect_devices')
         self.assertEqual(self.t.eval('set ::mock::selection'),'M2')
     def test_hierarchy_restored_on_error(self):
         self.t.call('source',str(ROOT/'tests/mock_xschem.tcl'))

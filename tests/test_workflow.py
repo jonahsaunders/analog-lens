@@ -124,15 +124,15 @@ class Workflow(unittest.TestCase):
                 self.pump_until(lambda: 'ready' in str(self.get('run_log')))
                 self.call('cancel_run')
                 self.assertEqual(self.get('run_state'), 'cancelling')
-                self.pump_until(lambda: not str(self.get('run_channel')))
+                self.pump_until(lambda: not int(self.t.call('string', 'length', self.get('run_channel'))))
                 self.assertEqual(self.get('run_state'), 'cancelled')
                 self.assertEqual(self.get('records'), before)
                 self.assertIn('Partial results were not loaded', str(self.get('run_log')))
                 self.assertIsNone(unrelated.poll())
             finally:
-                if str(self.get('run_channel')):
+                if int(self.t.call('string', 'length', self.get('run_channel'))):
                     self.call('signal_run', 'KILL')
-                    self.pump_until(lambda: not str(self.get('run_channel')))
+                    self.pump_until(lambda: not int(self.t.call('string', 'length', self.get('run_channel'))))
                 unrelated.terminate(); unrelated.wait(timeout=5)
                 self.t.setvar('env(PATH)', old_path)
 

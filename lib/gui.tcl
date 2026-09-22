@@ -45,6 +45,7 @@ proc ::analog_lens::install_menu {} {
     $m add command -label {Open session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog open}}
     $m add command -label {Save session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog save}}
     $m add command -label {Check environment} -command {::analog_lens::show; ::analog_lens::check_environment}
+    $m add command -label {Project results…} -command {::analog_lens::sidebar_action ::analog_lens::results_dialog}
     $m add command -label {Project settings…} -command ::analog_lens::project_settings
     $m add command -label {Characterize selected model…} -command {::analog_lens::sidebar_action ::analog_lens::characterize_dialog}
     $bar add cascade -label {Analog Lens} -menu $m
@@ -83,6 +84,7 @@ proc ::analog_lens::show {} {
     $root.tools.session.menu add command -label {Save session…} -command {::analog_lens::safe {::analog_lens::session_dialog save}}
     $root.tools.session.menu add separator
     $root.tools.session.menu add command -label {Check environment} -command ::analog_lens::check_environment
+    $root.tools.session.menu add command -label {Project results…} -command {::analog_lens::safe ::analog_lens::results_dialog}
     $root.tools.session.menu add command -label {Project integration…} -command ::analog_lens::project_settings
     $root.tools.session.menu add command -label {Show inspector sidebar} -command {::analog_lens::sidebar_action ::analog_lens::show_sidebar}
     $root.tools.run configure -style AL.Primary.TButton
@@ -487,8 +489,16 @@ proc ::analog_lens::build_lut {w} {
     ttk::label $w.error -textvariable ::analog_lens::sizing_error -style AL.Error.TLabel -wraplength 750
     grid $w.result -in $w.size -row 2 -column 0 -columnspan 4 -sticky ew -pady {8 0}; wrapping $w.result
     grid $w.error -in $w.size -row 3 -column 0 -columnspan 4 -sticky ew; wrapping $w.error
+    set col 0
+    foreach {key title} {target_fingers {Fingers (blank: preserve)} target_copies {Copies (blank: preserve)} verification_tolerance {Target tolerance (%)}} {
+        ttk::label $w.size.${key}label -text $title
+        ttk::entry $w.size.$key -textvariable ::analog_lens::$key -width 12
+        grid $w.size.${key}label -row 4 -column $col -sticky w -pady {8 0}
+        grid $w.size.$key -row 5 -column $col -sticky ew -padx {0 12}
+        incr col
+    }
     button $w.size.preview {Preview schematic changes…} ::analog_lens::preview_size
-    grid $w.size.preview -row 4 -column 0 -columnspan 4 -sticky w -pady {6 0}
+    grid $w.size.preview -row 6 -column 0 -columnspan 4 -sticky w -pady {6 0}
     ttk::label $w.note -textvariable ::analog_lens::lut_note -style AL.Muted.TLabel -wraplength 750
     pack $w.note -side bottom -fill x -pady {6 0}; wrapping $w.note
     canvas $w.plot -background [dict get $colors field] -highlightthickness 1 \
@@ -626,7 +636,7 @@ proc ::analog_lens::calculate_size {} {
         set sizing_error $result
         $window.tabs.lut.size.gmid state invalid; focus $window.tabs.lut.size.gmid; return
     }
-    set sizing_text "Estimated Id: [eng [get $result id] A]   ·   Total width: [format %.4g [get $result width]] µm\nWidth scaling is an estimate. Map to the PDK's fingers/multiplicity and verify by simulation."
+    set sizing_text "Estimated Id: [eng [get $result id] A]   ·   Total width: [format %.4g [get $result width]] µm\nPreview maps total width to the finger/copy counts below. Verify the estimate by simulation."
 }
 
 proc ::analog_lens::build_compare {w} {
@@ -678,6 +688,7 @@ proc ::analog_lens::keep_baseline {} {
     while {[dict exists $baselines $unique]} {set unique "$name ([incr i])"}
     dict set baselines $unique [dict create records $records context $active_context metadata $result_metadata]
     set baseline_choice $unique; set baseline_name {}; select_baseline
+    catch {archive_baseline $unique [dict get $baselines $unique]}
     set status "Baseline '$unique' kept. Save the session to retain it after restarting xschem."
 }
 proc ::analog_lens::render_compare {} {

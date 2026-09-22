@@ -51,6 +51,7 @@ proc ::analog_lens::project_sync {} {
     project_flush
     if {$project_defaults eq {}} {set project_defaults [session_data]}
     set project_key $key; set project_directory $directory
+    set ::analog_lens::verification_result {}; set ::analog_lens::verification_summary {}; set ::analog_lens::dependency_cache {}
     set records {}; set result_metadata {}; set ::analog_lens::active_context {}; set ::analog_lens::watch_key {}
     set data $project_defaults; set path {}
     if {$key ne {}} {
@@ -103,6 +104,13 @@ proc ::analog_lens::update_freshness {} {
     } elseif {$saved ne [design_stamp]} {
         set ::analog_lens::freshness {Out of date · Schematic changed; rerun before relying on these values.}
     } else {set ::analog_lens::freshness {Current · Results match the recorded schematic state.}}
+    set deps [dependency_status]
+    switch -- [get $deps state] {
+        changed {set ::analog_lens::freshness {Out of date · A schematic, symbol or model dependency changed.}}
+        partial {append ::analog_lens::freshness { · Some dependencies unresolved.}}
+        unverified {append ::analog_lens::freshness { · Dependencies unverified.}}
+    }
+    set ::analog_lens::conditions_confidence [condition_confidence [current_device]]
 }
 proc ::analog_lens::raw_signature {path} {
     set sig [file_signature $path]
@@ -170,17 +178,19 @@ proc ::analog_lens::native_enter {command operation} {
             if {[get $::analog_lens::integration_options device_saves] && [string match *ngspice* $cmd] && [file isfile $deck]} {
                 incr ::analog_lens::integration_internal
                 try {
-                    set saves [save_lines [collect_devices]]
+                    set saves [save_lines [collect_devices $deck]]
                     if {$saves ne {}} {atomic_write $deck [native_deck [read_text $deck] $saves]}
                     if {$stamp ne {}} {
                         dict set ::analog_lens::netlist_states $deck signature [raw_signature $deck]
                     }
                 } finally {incr ::analog_lens::integration_internal -1}
             }
+            set dependencies {}
+            if {[file isfile $deck]} {set dependencies [dependency_snapshot $deck]}
             set job [dict create context [context] project $::analog_lens::project_key directory $directory \
                 before $before preferred $configured default [file rootname $deck].raw \
                 analysis [get $::analog_lens::integration_options result_analysis] \
-                metadata [dict merge [capture_metadata] [dict create design_stamp $stamp input_deck [file_signature $deck] source native-simulation]]]
+                metadata [recorded_conditions [dict merge [capture_metadata] $dependencies [dict create design_stamp $stamp input_deck [file_signature $deck] source native-simulation]]]]
             set ::analog_lens::native_message {xschem simulation running… Results will be checked when it finishes.}
         }
     } why]} {set ::analog_lens::native_message "Automatic results unavailable: $why"; set job {}}
@@ -199,7 +209,7 @@ proc ::analog_lens::native_finished {id args} {
     if {![dict exists $::analog_lens::native_jobs $id]} {return}
     set job [dict get $::analog_lens::native_jobs $id]; dict unset ::analog_lens::native_jobs $id
     if {![info exists ::execute(exitcode,$id)] || $::execute(exitcode,$id) != 0} {
-        set ::analog_lens::native_message {xschem simulation did not complete successfully; previous results retained.}; return
+        set ::analog_lens::native_message {xschem simulation did not complete successfully; previous results retained.}; verification_failed failed; return
     }
     if {[catch {
         set candidates [glob -nocomplain -directory [dict get $job directory] *.raw]
@@ -235,6 +245,7 @@ proc ::analog_lens::attach_native_result {} {
         set ::analog_lens::result_metadata $metadata
         refresh
         catch {atomic_write [file rootname $path].metadata $metadata}
+        finish_result_run
         set ::analog_lens::native_message "Loaded [file tail $path] · $type"
     } on error {why options} {set ::analog_lens::native_message "Could not attach results: $why"} finally {incr ::analog_lens::integration_internal -1}
 }
@@ -302,7 +313,7 @@ proc ::analog_lens::current_device {} {
     if {[llength $owners] != 1} {return {}}
     set owner [lindex $owners 0]
     set fresh {}
-    foreach r [scan] {if {[get $r owner] eq $owner} {set fresh $r; break}}
+    foreach r [scan __AUTO__ $owner] {if {[get $r owner] eq $owner} {set fresh $r; break}}
     if {$fresh eq {}} {return {}}
     if {[context] eq $::analog_lens::active_context} {
         foreach r $::analog_lens::records {
@@ -335,7 +346,7 @@ proc ::analog_lens::show_sidebar {} {
         pack [label $panel.head.title {Analog Lens} AL.Heading.TLabel] -side left
         ttk::button $panel.head.close -text Hide -command ::analog_lens::hide_sidebar -width 5
         pack $panel.head.close -side right
-        foreach {name var} {project project_message freshness freshness title sidebar_title} {
+        foreach {name var} {project project_message freshness freshness conditions conditions_confidence verification verification_summary title sidebar_title} {
             ttk::label $panel.$name -textvariable ::analog_lens::$var -wraplength 280 -style AL.Muted.TLabel
             pack $panel.$name -fill x -pady {0 6}
         }
@@ -348,6 +359,8 @@ proc ::analog_lens::show_sidebar {} {
             charts {Analysis…} ::analog_lens::show
             size {Size selected…} ::analog_lens::size_selected
             characterize {Characterize…} ::analog_lens::characterize_dialog
+            results {Project results…} ::analog_lens::results_dialog
+            verify {Sizing verification…} ::analog_lens::verification_dialog
             settings {Project settings…} ::analog_lens::project_settings
         } {
             ttk::button $panel.actions.$name -text $title -command [list ::analog_lens::sidebar_action $command] -width 0
@@ -382,7 +395,7 @@ proc ::analog_lens::refresh_sidebar {} {
         foreach {key title unit} {id Current A gmid {gm/Id} 1/V gm gm S gain Gain V/V headroom Headroom V ft {fT estimate} Hz} {
             append text [format "%-12s %s\n" $title [eng [get [get $r values] $key] $unit]]
         }
-        append text "\nW: [get $r width]\nL: [get $r length]\n\n[get [get $r values] issues]"
+        append text "\nW: [get $r width]\nL: [get $r length]\n\n[join [get [get $r values] issues] \n]"
     }
     if {$text ne $sidebar_metrics} {
         $sidebar.metrics configure -state normal; $sidebar.metrics delete 1.0 end

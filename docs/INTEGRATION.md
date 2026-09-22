@@ -1,5 +1,7 @@
 # Integrated IIC workflow
 
+This page describes the v0.4 foundation. See [v0.5 integrated workflow](INTEGRATION_V05.md) for current geometry, hierarchy discovery, verification, provenance and project history behavior.
+
 Analog Lens 0.4 runs inside xschem's Tcl/Tk process in IIC-OSIC-TOOLS. Its sidebar, project memory, normal simulator integration, waveform cursor tracking, sizing changes, and PDK characterization share the current testbench context.
 
 ## Inspector sidebar

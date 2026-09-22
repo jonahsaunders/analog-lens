@@ -57,6 +57,7 @@ def make_testbench(pdk, base, out):
     if not candidates:
         raise ValueError(f'Cannot find the installed xschem symbol for {model}')
     symbol = candidates[0]
+    (out/'installed-mos.sym').write_text(symbol.read_text())
     pins = symbol_pins(symbol)
     width, length = ('10', '0.5') if pdk.startswith('sky') else ('10u', '0.6u' if pdk.startswith('gf') else '0.5u')
     # SKY130 vendor symbols supply the sky130_fd_pr__ prefix in their format.
@@ -73,7 +74,7 @@ def make_testbench(pdk, base, out):
         child_symbol += f'B 5 {x-2} -2 {x+2} 2 {{name={pin} dir=inout}}\n'
         child_pins.append((pin, x, 0))
     (out / 'al_child.sym').write_text(child_symbol)
-    bias = (includes + f'\nvg g 0 {vg}\nvd d 0 {vd}').replace('"', '\\"')
+    bias = (includes + f'\n.temp 27\nvg g 0 {vg}\nvd d 0 {vd}').replace('"', '\\"')
     top = HEADER + mos + labels(pins, ground=True)
     top += f'C {{{out / "al_child.sym"}}} 300 0 0 0 {{name=x1}}\n' + labels(child_pins, 300, ground=True)
     top += f'C {{devices/code_shown.sym}} -300 -250 0 0 {{name=BIAS only_toplevel=false value="{bias}"}}\n'

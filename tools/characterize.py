@@ -186,15 +186,20 @@ def main(argv=None):
         output.parent.mkdir(parents=True, exist_ok=True)
         work = Path(tempfile.mkdtemp(prefix=output.stem+'-decks-', dir=output.parent))
         env = dict(os.environ, PDK=args.pdk, PDKPATH=str(base), SPICE_USERINIT_DIR=str(base/'libs.tech/ngspice'))
-        rows = []; sweeps = []
+        rows = []; sweeps = []; dependencies = []
         for i, length in enumerate(args.lengths):
             print(f'Length {i+1}/{len(args.lengths)}: {length:g} µm', flush=True)
             deck = work/f'length-{i}.spice'; raw = work/f'length-{i}.raw'; log = work/f'length-{i}.log'
             text, prefix, current, psp = make_deck(args, base, length, raw.name)
             deck.write_text(text)
+            from project_data import read_graph, check_manifest
+            dependency, _ = read_graph(deck)
             code = simulate([binary, '-b', str(deck)], deck, log, env)
             if code or not raw.is_file() or re.search(r'(?im)^(fatal error|error:|doanalyses:)', log.read_text()):
                 raise ValueError(f'ngspice failed; inspect {log}')
+            if check_manifest(dependency, full=True)['state'] == 'changed':
+                raise ValueError('Model inputs changed during the sweep; repeat with stable model files.')
+            dependencies.append(dependency)
             points = parse_ascii_sweep(raw.read_text())
             curve, monotonic = rows_from_points(points, args, length, prefix, current, psp)
             rows.extend(curve)
@@ -209,7 +214,7 @@ def main(argv=None):
                       total_width_um=args.width, fingers=1, multiplier=1, pdk_path=str(base),
                       iic_version=os.environ.get('IIC_OSIC_TOOLS_VERSION', 'unknown'),
                       ngspice_version=subprocess.check_output([binary, '--version'], text=True).strip(),
-                      csv_sha256=hashlib.sha256(csv_text.getvalue().encode()).hexdigest(), sweeps=sweeps)
+                      csv_sha256=hashlib.sha256(csv_text.getvalue().encode()).hexdigest(), sweeps=sweeps, dependencies=dependencies)
         atomic_text(manifest, json.dumps(result, indent=2)+'\n')
         atomic_text(output, csv_text.getvalue())
         print(f'Completed: {len(rows)} measured samples → {output}', flush=True)

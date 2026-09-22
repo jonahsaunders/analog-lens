@@ -68,7 +68,7 @@ proc ::analog_lens::capture_result_metadata {} {
         if {[get $next $key] ne [get $result_metadata $key]} {set same 0}
     }
     if {$same} {
-        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context design_stamp source} {
+        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context design_stamp source dependencies dependency_hash dependency_warnings observed_conditions verification} {
             if {[dict exists $result_metadata $key]} {dict set next $key [dict get $result_metadata $key]}
         }
     }

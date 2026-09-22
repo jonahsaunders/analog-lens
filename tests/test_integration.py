@@ -185,7 +185,8 @@ class Integration(unittest.TestCase):
         self.set('target_gm_u', 800); self.set('size_plan', self.call('make_size_plan'))
         self.call('apply_size_plan')
         self.assertEqual(int(self.c('set', '::hostfixture::pushes')), 1)
-        self.assertEqual(self.c('dict', 'get', self.c('set', '::hostfixture::props'), 'nf'), 1)
+        self.assertEqual(self.c('dict', 'get', self.c('set', '::hostfixture::props'), 'nf'), 2)
+        self.assertEqual(self.c('dict', 'get', self.c('set', '::hostfixture::props'), 'm'), 3)
         self.c('xschem', 'undo'); self.assertEqual(before, self.c('set', '::hostfixture::props'))
 
     def test_unknown_model_and_wrong_pdk_cannot_be_applied(self):
@@ -233,3 +234,78 @@ class Integration(unittest.TestCase):
         self.assertIn('Loaded', self.get('char_status'))
         session = self.call('project_session_path', self.get('project_key'), str(self.directory))
         self.assertTrue(Path(session).is_file())
+
+    def test_finger_copy_geometry_limits_and_preview_invalidation(self):
+        self.load_compatible()
+        self.set('target_fingers', 4); self.set('target_copies', 2)
+        plan = self.call('make_size_plan')
+        geometry = self.c('dict', 'get', plan, 'geometry')
+        self.assertAlmostEqual(float(self.c('dict', 'get', geometry, 'finger_width')), 1.25)
+        self.assertAlmostEqual(float(self.c('dict', 'get', geometry, 'width')), 5.)
+        self.set('size_plan', plan); self.set('target_fingers', 3)
+        with self.assertRaises(tk.TclError): self.call('apply_size_plan')
+        self.set('target_fingers', 1024)
+        with self.assertRaises(tk.TclError): self.call('make_size_plan')
+        self.set('target_fingers', '[exit]')
+        with self.assertRaises(tk.TclError): self.call('make_size_plan')
+
+    def test_verification_requires_new_result_of_applied_revision(self):
+        self.load_compatible(); self.set('size_plan', self.call('make_size_plan'))
+        self.call('apply_size_plan')
+        applied = self.call('design_stamp')
+        self.call('verify_sizing_result')
+        self.assertIn('Not verified', self.get('verification_summary'))
+        raw = self.directory/'new.raw'; raw.write_text('new fixture raw')
+        self.call('read_results', str(raw), 'op'); self.call('refresh')
+        self.c('dict', 'set', '::analog_lens::result_metadata', 'design_stamp', applied)
+        self.call('verify_sizing_result')
+        self.assertEqual(self.c('dict', 'get', self.get('verification_result'), 'state'), 'Pass')
+        self.call('verification_dialog'); self.app.update()
+        self.assertIn('Measured', self.get('verification_text'))
+        self.assertIn('Partially verified', self.get('verification_text'))
+
+    def test_verification_reports_miss_and_missing_without_pass(self):
+        plan = self.c('dict', 'create', 'target_gm', .001, 'target_gmid', 15, 'tolerance', 5, 'before_values', '')
+        values = self.c('dict', 'create', 'gm', .002, 'gmid', 15)
+        result = self.call('evaluate_targets', plan, values)
+        self.assertEqual(self.c('dict', 'get', result, 'state'), 'Miss')
+        result = self.call('evaluate_targets', plan, self.c('dict', 'create', 'gm', .001))
+        self.assertEqual(self.c('dict', 'get', result, 'state'), 'Incomplete')
+
+    def test_result_history_copies_raw_and_filters_project_entries(self):
+        raw = self.directory/'run.raw'; raw.write_text('original fixture raw')
+        self.call('read_results', str(raw), 'op'); self.call('refresh'); self.call('archive_run')
+        self.set('baseline_name', 'Named fixture baseline'); self.call('keep_baseline')
+        self.call('results_dialog'); self.app.update()
+        tree = '.analog_lens.results.tree'
+        children = self.c(tree, 'children', '')
+        self.assertEqual(len(children), 2)
+        self.set('results_filter', 'Run'); self.call('refresh_results')
+        children = self.c(tree, 'children', ''); self.assertEqual(len(children), 1)
+        self.c(tree, 'selection', 'set', children[0]); self.call('result_details')
+        raw.write_text('overwritten native result')
+        self.call('open_project_result')
+        loaded = Path(str(self.c('set', '::mock::raw_file')))
+        self.assertEqual(loaded.read_text(), 'original fixture raw')
+        self.set('results_query', 'no-such-model'); self.call('refresh_results')
+        self.assertFalse(self.c(tree, 'children', ''))
+
+    def test_dependency_edit_marks_loaded_result_stale(self):
+        model = self.directory/'model.lib'; model.write_text('.param fixture=1')
+        deck = self.directory/'run.spice'; deck.write_text('title\n.include model.lib\n.temp 27\n')
+        metadata = self.call('dependency_snapshot', str(deck))
+        self.set('result_metadata', self.c('dict', 'merge', self.get('result_metadata'), metadata))
+        self.c('dict', 'set', '::analog_lens::result_metadata', 'design_stamp', self.call('design_stamp'))
+        self.call('update_freshness'); self.assertTrue(self.get('freshness').startswith('Current'))
+        model.write_text('.param fixture=2'); self.call('dependency_status', 1)
+        self.call('update_freshness'); self.assertTrue(self.get('freshness').startswith('Out of date'))
+
+    def test_batch_controls_generate_argument_list_without_shell(self):
+        self.call('batch_dialog'); self.app.update()
+        self.set('batch_edit(corners)', 'typical ss')
+        self.set('batch_edit(temps)', '27 85')
+        self.set('batch_edit(vds)', '.7 .9')
+        command = self.call('batch_command', str(self.directory/'out.csv'))
+        self.assertIn('--corners', command); self.assertIn('--cache', command)
+        self.set('batch_edit(corners)', 'tt;exit')
+        with self.assertRaises(tk.TclError): self.call('batch_command', str(self.directory/'out.csv'))

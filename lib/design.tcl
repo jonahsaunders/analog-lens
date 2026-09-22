@@ -1,6 +1,7 @@
 # Geometry changes are previewed, checked again, and grouped into one xschem Undo.
 namespace eval ::analog_lens {
     variable size_plan {}; variable sizing_result {}; variable sizing_preview_text {}
+    variable target_fingers {}; variable target_copies {}; variable verification_tolerance 10
     variable lookup_match_message {}; variable lookup_match_key {}
 }
 proc ::analog_lens::normalized_model {model} {
@@ -74,35 +75,44 @@ proc ::analog_lens::make_size_plan {} {
     set result [sizing $::analog_lens::lut_rows $::analog_lens::lut_slice $::analog_lens::target_length $::analog_lens::target_gmid $::analog_lens::target_gm_u]
     set family [get $r family]; set owner [get $r owner]
     dimension_um [get $r width] $family; dimension_um [get $r length] $family
-    set width [get $result width]; set length $::analog_lens::target_length
+    set geometry [geometry_plan $r [get $result width] $::analog_lens::target_length $::analog_lens::target_fingers $::analog_lens::target_copies]
+    set width [get $geometry width]; set length $::analog_lens::target_length
     set w [format %.10g $width]; set l [format %.10g $length]
     if {$family ne "sky130"} {append w u; append l u}
-    if {$family eq "ihp"} {set edits [dict create w $w l $l ng 1 m 1]} elseif {$family eq "sky130"} {
-        set edits [dict create W $w L $l nf 1 mult 1]
-    } else {set edits [dict create W $w L $l nf 1 m 1]}
-    # Existing alternate dimension names would otherwise remain misleading.
+    set fingers [get $geometry fingers]; set copies [get $geometry copies]
+    if {$family eq "ihp"} {set edits [dict create w $w l $l ng $fingers m $copies]} elseif {$family eq "sky130"} {
+        set edits [dict create W $w L $l nf $fingers mult $copies]
+    } else {set edits [dict create W $w L $l nf $fingers m $copies]}
     foreach {upper lower value} [list W w $w L l $l] {
         foreach key [list $upper $lower] {if {[property $owner [list $key]] ne {}} {dict set edits $key $value}}
     }
-    foreach key {nf ng mult m} {if {[property $owner [list $key]] ne {}} {dict set edits $key 1}}
+    foreach key {nf ng} {if {[property $owner [list $key]] ne {}} {dict set edits $key $fingers}}
+    # SKY130 mult and an explicit m are independent multipliers, not aliases.
+    # Put the requested total multiplicity in mult and neutralize extra m.
+    if {$family eq "sky130" && [property $owner {m}] ne {}} {dict set edits m 1}
+    if {$family ne "sky130" && [property $owner {mult}] ni {{} 1}} {error {Unexpected extra mult property; resolve its simulator meaning before sizing.}}
+    set tolerance [number $::analog_lens::verification_tolerance]
+    if {$tolerance eq {} || $tolerance <= 0 || $tolerance > 100} {error {Verification tolerance must be above 0 and at most 100 percent.}}
     set before [xschem getprop instance $owner]
     return [dict create context [context] owner $owner model [get $r model] before $before edits $edits \
-        result $result length $length lookup [raw_signature $::analog_lens::lut_file] slice $::analog_lens::lut_slice \
-        targets [list $::analog_lens::target_length $::analog_lens::target_gmid $::analog_lens::target_gm_u]]
+        result $result geometry $geometry tolerance $tolerance length $length lookup [raw_signature $::analog_lens::lut_file] slice $::analog_lens::lut_slice \
+        targets [sizing_targets]]
 }
 proc ::analog_lens::preview_size {} {
     variable size_plan; variable sizing_preview_text; variable window
     set size_plan [make_size_plan]; set owner [get $size_plan owner]
     set sizing_preview_text "[get $size_plan model] · $owner\n\n"
     dict for {key value} [get $size_plan edits] {append sizing_preview_text "$key: [property $owner [list $key]] → $value\n"}
-    append sizing_preview_text "\nLookup: [join [get $size_plan slice] { · }]\nThis estimate uses one finger and one parallel copy. Total width is [format %.5g [get [get $size_plan result] width]] µm.\n\nParasitic formulas remain unchanged; fixed parasitic values need your review. Width scaling is an estimate. Run the circuit to verify.\n\nApply changes only the open schematic. xschem Undo restores all these properties in one step; saving remains your choice."
+    append sizing_preview_text "\nLookup: [join [get $size_plan slice] { · }]\nGeometry: [get [get $size_plan geometry] fingers] fingers × [get [get $size_plan geometry] copies] parallel copies.\nPer-finger width: [format %.5g [get [get $size_plan geometry] finger_width]] µm. Total realized width: [format %.5g [get [get $size_plan geometry] total_width]] µm.\nVerification tolerance: ±[get $size_plan tolerance]% for gm and gm/Id.\n[condition_confidence [current_device]]\n\nParasitic formulas remain unchanged; fixed parasitic values need your review. Width scaling is an estimate. Run the circuit to verify.\n\nApply changes only the open schematic. xschem Undo restores all these properties in one step; saving remains your choice."
     set w $window.sizepreview
     if {[winfo exists $w]} {destroy $w}
     toplevel $w; wm title $w {Preview geometry changes · Analog Lens}; wm transient $w $window
-    wm geometry $w 560x480; wm minsize $w 440 360
+    wm geometry $w 720x540; wm minsize $w 440 360
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
     pack [button $w.actions.apply Apply [list ::analog_lens::apply_size_plan 0]] -side left
     pack [button $w.actions.run {Apply & run OP} [list ::analog_lens::apply_size_plan 1]] -side left -padx 8
+    pack [button $w.actions.native {Apply & run testbench} [list ::analog_lens::apply_size_plan 2]] -side left
+    set_enabled $w.actions.native [expr {[xschem get currsch] == 0}]
     set_enabled $w.actions.run [expr {[xschem get currsch] == 0}]
     pack [button $w.actions.cancel Cancel [list destroy $w]] -side right
     text $w.text -wrap word -state normal; text_style $w.text
@@ -120,7 +130,7 @@ proc ::analog_lens::apply_size_plan {{rerun 0}} {
     set selection [xschem selected_set]
     if {[llength $selection] != 1 || [lindex $selection 0] ne $owner || [xschem getprop instance $owner] ne [get $size_plan before]} {error {Selection or geometry changed. Preview again.}}
     if {[raw_signature $::analog_lens::lut_file] ne [get $size_plan lookup] || $::analog_lens::lut_slice ne [get $size_plan slice] ||
-        [list $::analog_lens::target_length $::analog_lens::target_gmid $::analog_lens::target_gm_u] ne [get $size_plan targets]} {error {Lookup data or targets changed. Preview again.}}
+        [sizing_targets] ne [get $size_plan targets]} {error {Lookup data or targets changed. Preview again.}}
     if {$rerun && [xschem get currsch] != 0} {error {Apply here, save the subcircuit, and return to the top-level testbench to rerun.}}
     set r [current_device]
     if {[get $r values] ne {}} {
@@ -136,9 +146,42 @@ proc ::analog_lens::apply_size_plan {{rerun 0}} {
     }
     # Also invalidate tests/hosts without the edit notification trace.
     set key [lindex [project_identity] 0]; if {$key ne {}} {dict incr ::analog_lens::edit_revisions $key}
+    begin_verification $size_plan $r
     set size_plan {}; xschem redraw
     if {[winfo exists $::analog_lens::window.sizepreview]} {destroy $::analog_lens::window.sizepreview}
     set ::analog_lens::status {Geometry applied. xschem Undo restores it; rerun to verify and compare.}
     update_freshness; project_flush
-    if {$rerun} {run_op}
+    if {$rerun == 1} {run_op} elseif {$rerun == 2} {run_testbench}
+}
+
+proc ::analog_lens::sizing_targets {} {
+    return [list $::analog_lens::target_length $::analog_lens::target_gmid $::analog_lens::target_gm_u $::analog_lens::target_fingers $::analog_lens::target_copies $::analog_lens::verification_tolerance]
+}
+proc ::analog_lens::geometry_plan {device total length fingers copies} {
+    supported_model $device
+    set family [get $device family]
+    if {$fingers eq {}} {set fingers [get $device fingers 1]; if {$fingers eq {}} {set fingers 1}}
+    if {$copies eq {}} {
+        set copies [get $device multiplier 1]; if {$copies eq {}} {set copies 1}
+        if {$family eq "sky130"} {
+            set extra [property [get $device owner] {m}]
+            if {$extra ne {}} {
+                if {![string is integer -strict $extra] || $extra < 1} {error {Parameterized multiplicity needs an explicit copy count.}}
+                set copies [expr {$copies*$extra}]
+            }
+        }
+    }
+    foreach value [list $fingers $copies] {
+        if {![string is integer -strict $value] || $value < 1 || $value > 1024} {error {Fingers and parallel copies must be integers from 1 to 1024. Blank preserves the existing count.}}
+    }
+    # Conservative supported profile limits, not a replacement for PDK DRC.
+    lassign [dict get {sky130 {0.15 0.42} gf180 {0.28 0.22} ihp {0.13 0.15}} $family] min_l min_w
+    if {$length < $min_l || $length > 1000} {error "Length is outside this profile's supported range ($min_l–1000 µm)."}
+    set finger [expr {$total/($fingers*$copies)}]
+    if {$finger < $min_w || $finger > 1000} {error "Per-finger width must be $min_w–1000 µm. Change the finger/copy counts or target gm."}
+    # Round width up on a conservative 5 nm grid; never silently change L,
+    # because that would select a different characterized curve.
+    set finger [expr {ceil($finger/0.005-1e-9)*0.005}]
+    if {abs($length/0.005-round($length/0.005)) > 1e-6} {error {Choose a characterized length on the supported 5 nm grid.}}
+    return [dict create fingers $fingers copies $copies finger_width $finger width [expr {$finger*$fingers}] total_width [expr {$finger*$fingers*$copies}]]
 }

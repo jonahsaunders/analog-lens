@@ -22,6 +22,7 @@ set no_ask_quit 1
 after 120000 {fail "Timed out during $::live_stage"}
 if {[catch {
     stage startup
+    set netlist_show 0
     source [file join $::env(ANALOG_LENS_ROOT) analog_lens.tcl]
     set ::netlist_dir $::env(ANALOG_LENS_OUTPUT)
     ::analog_lens::show
@@ -106,7 +107,10 @@ if {[catch {
     ::analog_lens::refresh
     set native_values [dict get [lindex $::analog_lens::records 0] values]
     require {abs([dict get $native_values terminal_vds]-0.7) < 1e-5} {Native .control alter command was not preserved.}
+    file copy -force [::analog_lens::raw rawfile] [file join $::env(ANALOG_LENS_OUTPUT) native-original.raw]
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) native.csv]
+    set report [::analog_lens::read_text [file join $::env(ANALOG_LENS_OUTPUT) native.csv]]
+    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) native.csv] [string map [list [::analog_lens::raw rawfile] [file join $::env(ANALOG_LENS_OUTPUT) native-original.raw]] $report]
     ::analog_lens::update_freshness
     require {[string match {Current*} $::analog_lens::freshness]} "Native source state incorrect: $::analog_lens::freshness"
     set host [xschem get topwindow]
@@ -140,6 +144,32 @@ if {[catch {
     xschem undo
     require {[xschem getprop instance M1] eq $before_props} {One xschem Undo did not restore all geometry properties.}
 
+    # Exercise an unsaved multifinger edit through native netlisting and verification.
+    stage multifinger-verification
+    xschem unselect_all; xschem select instance M1
+    set ::analog_lens::target_fingers 2; set ::analog_lens::target_copies 2
+    ::analog_lens::refresh
+    ::analog_lens::preview_size
+    set expected_geometry [dict get $::analog_lens::size_plan geometry]
+    ::analog_lens::apply_size_plan 2
+    set deadline [expr {[clock milliseconds]+90000}]
+    while {[dict size $::analog_lens::native_jobs]} {
+        require {[clock milliseconds] < $deadline} {Sized native simulation exceeded 90 seconds.}
+        after 20 {set ::live_tick 1}; vwait ::live_tick
+    }
+    update; ::analog_lens::attach_native_result
+    require {[dict size $::analog_lens::verification_result] > 0} "Sizing verification missing: $::analog_lens::verification_summary"
+    require {[dict get $::analog_lens::verification_result state] in {Pass Miss}} {Sizing targets were not measured.}
+    ::analog_lens::verification_dialog
+    capture_live .analog_lens.verification sizing-verification.png
+    ::analog_lens::results_dialog
+    require {[llength [.analog_lens.results.tree children {}]] >= 3} {Project history did not retain runs and baselines.}
+    capture_live .analog_lens.results project-results.png
+    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) verification.tcldata] $::analog_lens::verification_result
+    # Restore the baseline geometry for the existing raw/export comparison checks.
+    xschem undo
+    set ::analog_lens::target_fingers {}; set ::analog_lens::target_copies {}
+
     # Global waveform cursor B follows the nearest saved point in an actual DC raw.
     stage cursor
     ::analog_lens::read_results $::env(ANALOG_LENS_SWEEP) dc
@@ -169,6 +199,24 @@ if {[catch {
     require {$::analog_lens::lut_file eq $::analog_lens::char_output} {Generated lookup was not loaded into the explorer.}
     capture_live .analog_lens.characterize characterization.png
     ::analog_lens::project_flush
+    stage characterization-batch
+    ::analog_lens::batch_dialog
+    set ::analog_lens::batch_edit(corners) $::analog_lens::char_edit(corner)
+    set ::analog_lens::batch_edit(temps) {27 85}
+    set ::analog_lens::batch_edit(vds) 0.7
+    set ::analog_lens::batch_edit(vsb) 0
+    foreach attempt {first reused} {
+        ::analog_lens::start_characterization 1
+        set deadline [expr {[clock milliseconds]+90000}]
+        while {$::analog_lens::char_channel ne {}} {
+            require {[clock milliseconds] < $deadline} {Characterization batch exceeded 90 seconds.}
+            after 20 {set ::live_tick 1}; vwait ::live_tick
+        }
+        require {$::analog_lens::char_state eq "completed"} "$::analog_lens::char_status\n$::analog_lens::char_log"
+        if {$attempt eq "reused"} {require {[string first {Reusing verified cached samples} $::analog_lens::char_log] >= 0} {Completed batch conditions were not reused.}}
+    }
+    capture_live .analog_lens.batch characterization-batch.png
+    ::analog_lens::project_flush
     stage project-persistence
     set session [::analog_lens::project_session_path $::analog_lens::project_key $::analog_lens::project_directory]
     require {[file isfile $session]} {Project session was not autosaved.}
@@ -177,7 +225,7 @@ if {[catch {
     ::analog_lens::open_session $session
     require {$::analog_lens::target_gm_u == $restore_target} {Project session did not restore sizing targets.}
     ::analog_lens::close_window
-    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) passed.txt] {Real xschem run, hierarchy, cross-probing, annotation, embedded sidebar, native simulation/callback, cursor following, sizing/Undo, characterization and project persistence passed.}
+    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) passed.txt] {Real xschem run, hierarchy, cross-probing, annotation, embedded sidebar, native simulation/callback, cursor following, sizing/Undo, multifinger measured verification, project results browser, characterization batches/cache reuse and project persistence passed.}
 } message]} {fail "$message\n$::errorInfo"}
 puts {Live xschem integration passed.}
 exit 0

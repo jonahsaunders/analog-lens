@@ -1,5 +1,7 @@
 # Analog Lens for xschem
 
+New in v0.5: measured sizing verification, finger/copy controls, netlist-based hierarchy discovery, dependency fingerprints, and a project results browser with reusable PVT/bias characterization batches. See the [v0.5 workflow guide](docs/INTEGRATION_V05.md).
+
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
 
 Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.

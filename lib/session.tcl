@@ -86,6 +86,15 @@ proc ::analog_lens::validate_session {data} {
         if {[get $options result_analysis] ni {auto op dc tran}} {error "Invalid project analysis type."}
         dict get $options result_path
     }
+    if {[dict exists $data geometry_options]} {
+        set options [get $data geometry_options]
+        foreach key {fingers copies} {
+            set value [get $options $key]
+            if {$value ne {} && (![string is integer -strict $value] || $value < 1 || $value > 1024)} {error {Invalid saved finger/copy count.}}
+        }
+        set tolerance [number [get $options tolerance]]
+        if {$tolerance eq {} || $tolerance <= 0 || $tolerance > 100} {error {Invalid verification tolerance.}}
+    }
     return $data
 }
 proc ::analog_lens::session_data {} {
@@ -106,6 +115,7 @@ proc ::analog_lens::session_data {} {
         baseline_choice $baseline_choice preferences $prefs geometry $session_geometry sash $session_sash \
         lookup_file $lut_file lookup_slice $lut_slice]
     if {[info exists ::analog_lens::integration_options]} {dict set data integration $::analog_lens::integration_options}
+    dict set data geometry_options [dict create fingers $::analog_lens::target_fingers copies $::analog_lens::target_copies tolerance $::analog_lens::verification_tolerance]
     validate_session $data
     return $data
 }
@@ -131,6 +141,9 @@ proc ::analog_lens::apply_session_data {data path} {
         if {[file pathtype $lookup] eq "relative"} {set lookup [file join [file dirname $path] $lookup]}
         if {[file isfile $lookup]} {set rows [parse_lut [read_text $lookup]]} else {set warning { · Lookup file is missing; load it again.}; set lookup {}}
     }
+    set geometry [get $data geometry_options {fingers {} copies {} tolerance 10}]
+    set ::analog_lens::target_fingers [get $geometry fingers]; set ::analog_lens::target_copies [get $geometry copies]
+    set ::analog_lens::verification_tolerance [get $geometry tolerance 10]
     set limits [dict get $data limits]; set declared [dict get $data declared]
     set baselines [dict get $data baselines]; set baseline_choice [get $data baseline_choice]
     if {[dict exists $data integration]} {set ::analog_lens::integration_options [dict get $data integration]}
