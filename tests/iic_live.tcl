@@ -167,6 +167,7 @@ if {[catch {
     }
     require {[dict size $::analog_lens::verification_result] > 0} "Sizing verification missing: $::analog_lens::verification_summary"
     require {[dict get $::analog_lens::verification_result state] in {Pass Miss}} {Sizing targets were not measured.}
+    ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) verification.csv]
     lassign [::analog_lens::native_paths] native_directory native_deck
     set deck_text [regsub -all {\n[ \t]*\+[ \t]*} [::analog_lens::read_text $native_deck] { }]
     set sized_instance [lindex [regexp -all -inline -line {^XM1[^\n]*} $deck_text] 0]

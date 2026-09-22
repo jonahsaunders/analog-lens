@@ -196,7 +196,7 @@ def main():
                               directory/'xschem.log', env=env, cwd=directory, timeout=360)
             if code or not (directory/'passed.txt').is_file():
                 raise ValueError('Live xschem checks failed; inspect xschem.log')
-            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv')]
+            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv', 'verification.csv')]
             record(pdk+'-xschem', 'passed', comparisons=comparisons)
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
             record(pdk+'-xschem', 'failed', error=str(exc))

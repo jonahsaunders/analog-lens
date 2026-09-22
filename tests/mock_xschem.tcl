@@ -54,6 +54,7 @@ proc xschem {command args} {
                 loaded {return 0}
                 sim_type {return op}
                 rawfile {return $::mock::raw_file}
+                clear {set ::mock::raw_file {}}
                 read {set ::mock::raw_file [lindex $args 1]}
                 points - datasets {return 1}
                 list {return [dict keys $::mock::vectors]}

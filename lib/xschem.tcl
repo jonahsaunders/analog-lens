@@ -124,7 +124,12 @@ proc ::analog_lens::load_results {} {
 proc ::analog_lens::read_results {file type} {
     if {![file isfile $file] || [file size $file] == 0} {error "Results file is missing or empty: $file"}
     incr ::analog_lens::integration_internal
-    try {raw read $file $type} finally {incr ::analog_lens::integration_internal -1}
+    try {
+        # xschem caches plots by filename/type; read alone can retain a prior
+        # simulation when native ngspice overwrites the same raw path.
+        raw clear $file $type
+        raw read $file $type
+    } finally {incr ::analog_lens::integration_internal -1}
     if {[raw loaded] < 0 || [file normalize [raw rawfile]] ne [file normalize $file] || [raw sim_type] ne $type} {
         error "xschem did not load the requested $type plot. Existing results were not analyzed as new data."
     }
