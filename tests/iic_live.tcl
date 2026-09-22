@@ -144,14 +144,39 @@ if {[catch {
     xschem undo
     require {[xschem getprop instance M1] eq $before_props} {One xschem Undo did not restore all geometry properties.}
 
+    # Exercise the six v0.6 usability additions with installed models.
+    stage guided-workspace
+    xschem unselect_all; xschem select instance M1
+    ::analog_lens::refresh
+    # Undo restored the geometry; rerun to establish current conditions explicitly.
+    ::analog_lens::run_testbench
+    set deadline [expr {[clock milliseconds]+90000}]
+    while {[dict size $::analog_lens::native_jobs]} {
+        require {[clock milliseconds] < $deadline} {Condition refresh exceeded 90 seconds.}
+        after 20 {set ::live_tick 1}; vwait ::live_tick
+    }
+    update; ::analog_lens::attach_native_result
+    xschem unselect_all; xschem select instance M1
+    ::analog_lens::size_selected
+    ::analog_lens::use_device_conditions
+    require {abs($::analog_lens::char_edit(vds)-0.7) < 1e-5} {Device-condition reuse did not copy terminal Vds.}
+    require {$::analog_lens::char_edit(corner) in [::analog_lens::characterization_corners]} {Observed corner absent from installed choices.}
+    require {[dict size $::analog_lens::workspace_choices] == 1} {Expected a unique compatible saved lookup.}
+    ::analog_lens::setup_dialog
+    require {![dict size $::analog_lens::native_jobs]} {Optional setup started an unexpected simulation.}
+    capture_live .analog_lens.onboarding project-setup.png
+    destroy .analog_lens.onboarding
+    require {[.analog_lens.tabs select] eq ".analog_lens.tabs.design"} {Size selected did not open the unified workspace.}
+
     # Exercise an unsaved multifinger edit through native netlisting and verification.
     stage multifinger-verification
     xschem unselect_all; xschem select instance M1
     set ::analog_lens::target_fingers 2; set ::analog_lens::target_copies 2
     ::analog_lens::refresh
-    ::analog_lens::preview_size
+    set ::analog_lens::target_gm_u "[expr {$::analog_lens::target_gm_u/1000.}] mS"
+    ::analog_lens::workspace_preview; ::analog_lens::refresh_workspace
     set expected_geometry [dict get $::analog_lens::size_plan geometry]
-    ::analog_lens::apply_size_plan 2
+    .analog_lens.tabs.design.body.canvas.content.inputs.actions.apply invoke
     set deadline [expr {[clock milliseconds]+90000}]
     while {[dict size $::analog_lens::native_jobs]} {
         require {[clock milliseconds] < $deadline} {Sized native simulation exceeded 90 seconds.}
@@ -173,7 +198,11 @@ if {[catch {
     set sized_instance [lindex [regexp -all -inline -line {^XM1[^\n]*} $deck_text] 0]
     require {[regexp {(^|\s)(nf|ng)=2(\s|$)} $sized_instance]} "Finger count was not emitted by the installed symbol: $sized_instance"
     require {[regexp {(^|\s)(m|mult)=2(\s|$)} $sized_instance]} "Copy count was not emitted by the installed symbol: $sized_instance"
+    ::analog_lens::refresh_workspace
+    wm geometry .analog_lens 1380x940+0+0
+    capture_live .analog_lens sizing-workspace.png
     ::analog_lens::verification_dialog
+    require {[llength [.analog_lens.verification.chart find withtag tolerance]] == 2} {Verification tolerance bands were not drawn.}
     capture_live .analog_lens.verification sizing-verification.png
     ::analog_lens::results_dialog
     require {[llength [.analog_lens.results.tree children {}]] >= 3} {Project history did not retain runs and baselines.}
@@ -238,7 +267,7 @@ if {[catch {
     ::analog_lens::open_session $session
     require {$::analog_lens::target_gm_u == $restore_target} {Project session did not restore sizing targets.}
     ::analog_lens::close_window
-    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) passed.txt] {Real xschem run, hierarchy, cross-probing, annotation, embedded sidebar, native simulation/callback, cursor following, sizing/Undo, multifinger measured verification, project results browser, characterization batches/cache reuse and project persistence passed.}
+    ::analog_lens::write_text [file join $::env(ANALOG_LENS_OUTPUT) passed.txt] {Real xschem run, hierarchy, cross-probing, annotation, embedded sidebar, native simulation/callback, cursor following, sizing/Undo, multifinger measured verification, unified sizing workspace, device-condition reuse, installed corner selection, optional setup, unit-aware inputs, verification charts, project results browser, characterization batches/cache reuse and project persistence passed.}
 } message]} {fail "$message\n$::errorInfo"}
 puts {Live xschem integration passed.}
 exit 0

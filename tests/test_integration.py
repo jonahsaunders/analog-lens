@@ -342,3 +342,122 @@ class Integration(unittest.TestCase):
         self.c('trace', 'remove', 'execution', 'xschem', 'leave', 'redraw_notice')
         pending = self.c('dict', 'get', self.get('pending_verifications'), self.get('project_key'))
         self.assertEqual(self.c('dict', 'get', pending, 'applied_stamp'), self.call('design_stamp'))
+
+    def test_engineering_units_are_dimension_checked_and_never_evaluated(self):
+        for text, kind, expected in [('800 µS','gm',800),('0.8 mS','gm',800),('5e-4S','gm',500),('500 nm','length',.5),('-700 mV','voltage',-.7),('85°C','temperature',85),('10%','percent',10)]:
+            self.assertAlmostEqual(float(self.call('quantity',text,kind)),expected)
+        for value in ('[exit]', '1;exit', 'NaN', 'Inf', '1e999', '700mV'):
+            with self.assertRaises(tk.TclError): self.call('quantity',value,'gm')
+        self.assertEqual(tuple(map(float,self.call('quantity_list','500 nm, 1 µm','length'))),(.5,1.))
+
+    def test_unified_workspace_previews_units_and_retains_one_undo(self):
+        self.load_compatible(); self.call('size_selected'); self.app.update()
+        self.assertEqual(str(self.c('.analog_lens.tabs','select')),'.analog_lens.tabs.design')
+        self.set('target_gm_u','0.8 mS'); self.set('target_length','300 nm')
+        self.call('workspace_preview'); self.call('refresh_workspace')
+        self.assertFalse(self.c('winfo','exists','.analog_lens.sizepreview'))
+        self.assertIn('Total realized width', self.get('sizing_preview_text'))
+        self.assertEqual(float(self.get('target_gm_u')),800)
+        button='.analog_lens.tabs.design.body.canvas.content.inputs.actions.only'
+        self.assertFalse(self.c(button,'instate','disabled'))
+        original=self.c('xschem','getprop','instance','M1')
+        self.call('workspace_action', '::analog_lens::apply_size_plan 0')
+        self.c('xschem','undo')
+        self.assertEqual(self.c('xschem','getprop','instance','M1'),original)
+        self.assertEqual(int(self.c('set','::hostfixture::pushes')),1)
+
+    def test_unit_inputs_autosave_as_canonical_numbers(self):
+        self.set('target_gm_u','0.8 mS'); self.set('target_length','500 nm')
+        data=self.call('session_data'); prefs=self.c('dict','get',data,'preferences')
+        self.assertEqual(float(self.c('dict','get',prefs,'target_gm_u')),800)
+        self.assertEqual(float(self.c('dict','get',prefs,'target_length')),.5)
+        self.assertEqual(self.get('target_gm_u'),'0.8 mS')
+
+    def current_metadata(self):
+        self.c('dict','set','::analog_lens::result_metadata','design_stamp',self.call('design_stamp'))
+        self.c('dict','set','::analog_lens::result_metadata','observed_conditions','corner illustrative temp_c 27')
+        self.call('update_freshness')
+
+    def test_device_conditions_clear_unknowns_and_preserve_body_bias_sign(self):
+        self.load_compatible(); self.current_metadata()
+        device=self.call('current_device')
+        device=self.c('dict','replace',device,'values','terminal_vds -0.7 terminal_vbs 0.2')
+        conditions=self.call('device_conditions',device)
+        self.assertAlmostEqual(float(self.c('dict','get',conditions,'vds_v')),-.7)
+        self.assertAlmostEqual(float(self.c('dict','get',conditions,'vsb_v')),-.2)
+        self.c('dict','unset','::analog_lens::result_metadata','observed_conditions')
+        self.c('dict','set','::analog_lens::result_metadata','corner','')
+        self.c('dict','set','::analog_lens::result_metadata','temp_c','')
+        self.call('use_device_conditions')
+        self.assertEqual(int(self.c('string','length',self.get('char_edit(corner)'))),0)
+        self.assertEqual(int(self.c('string','length',self.get('char_edit(temp)'))),0)
+        self.assertIn('unknown fields',self.get('workspace_message'))
+        self.c('dict','incr','::analog_lens::edit_revisions',self.get('project_key'))
+        with self.assertRaises(tk.TclError):self.call('use_device_conditions')
+
+    def test_saved_lookup_reuse_requires_unique_matching_conditions(self):
+        path=self.load_compatible();self.current_metadata()
+        self.call('use_device_conditions')
+        self.assertEqual(int(self.c('dict','size',self.get('workspace_choices'))),1)
+        self.assertEqual(str(self.get('lut_file')),str(path))
+        dest=self.directory/'.analog-lens/lookups/duplicate/lookup.csv';dest.parent.mkdir(parents=True);dest.write_text(path.read_text())
+        self.call('use_device_conditions')
+        self.assertEqual(int(self.c('dict','size',self.get('workspace_choices'))),2)
+        self.assertIn('Several saved lookups',self.get('workspace_message'))
+        self.assertEqual(int(self.c('string','length',self.get('workspace_choice'))),0)
+
+    def test_recovery_actions_explain_stale_results_without_dialogs(self):
+        self.load_compatible();self.current_metadata()
+        self.c('dict','incr','::analog_lens::edit_revisions',self.get('project_key'))
+        self.call('update_freshness')
+        issues=self.call('workflow_issues')
+        self.assertTrue(any('Set up project' in str(row) or 'Rerun testbench' in str(row) for row in issues))
+        self.call('workspace_action','error {Fix this field}')
+        self.assertEqual(self.get('workspace_message'),'Fix this field')
+        self.assertFalse(self.c('winfo','exists','.__tk__messagebox'))
+
+    def test_optional_setup_does_not_run_and_saves_result_choice(self):
+        self.assertFalse(self.c('winfo','exists','.analog_lens.onboarding'))
+        self.call('setup_dialog');self.app.update()
+        self.assertEqual(len(self.c('.analog_lens.onboarding.body.checks','children','')),7)
+        self.set('setup_result','chosen.raw');self.set('setup_analysis','op');self.call('setup_save')
+        self.assertEqual(str(self.c('dict','get',self.get('integration_options'),'result_path')),'chosen.raw')
+        self.assertEqual(int(self.c('dict','size',self.get('native_jobs'))),0)
+
+    def test_visual_verification_shows_measured_table_and_tolerance_bands(self):
+        plan=self.c('dict','create','target_gm',.001,'target_gmid',15,'tolerance',10,'before_values','gm .0007 gmid 12')
+        result=self.call('evaluate_targets',plan,'gm .0012 gmid 15')
+        self.set('verification_result',result);self.set('verification_summary','Miss')
+        self.call('verification_dialog');self.app.update()
+        self.assertEqual(len(self.c('.analog_lens.verification.table','children','')),2)
+        self.assertEqual(len(self.c('.analog_lens.verification.chart','find','withtag','tolerance')),2)
+        self.assertEqual(len(self.c('.analog_lens.verification.chart','find','withtag','after')),2)
+        self.set('workspace_details',1);self.call('verification_details','.analog_lens.verification')
+        self.app.update();self.assertTrue(self.c('winfo','ismapped','.analog_lens.verification.details'))
+
+    def test_characterization_accepts_units_without_mutating_input_or_polarity(self):
+        self.call('characterize_dialog')
+        for key,value in {'lengths':'500nm 1um','width':'10um','temp':'85°C','vds':'700mV','vsb':'-100mV','start':'200mV','stop':'1.8V','step':'25mV'}.items():self.set('char_edit('+key+')',value)
+        command=self.call('characterization_command',str(self.directory/'units.csv'))
+        self.assertAlmostEqual(float(command[command.index('--vds')+1]),.7)
+        self.assertAlmostEqual(float(command[command.index('--vsb')+1]),-.1)
+        self.assertEqual(self.get('char_edit(vds)'),'700mV')
+
+    def test_small_workspace_and_large_text_can_scroll_to_actions(self):
+        self.call('size_selected')
+        for font in ('TkDefaultFont','TkTextFont'):self.c('font','configure',font,'-size',14)
+        self.c('wm','geometry','.analog_lens','900x640');self.app.update()
+        c='.analog_lens.tabs.design.body.canvas';button=c+'.content.inputs.actions.preview'
+        self.call('workspace_focus',button);self.app.update()
+        top=int(self.c('winfo','rooty',button));bottom=top+int(self.c('winfo','height',button))
+        self.assertGreaterEqual(top,int(self.c('winfo','rooty',c)))
+        self.assertLessEqual(bottom,int(self.c('winfo','rooty',c))+int(self.c('winfo','height',c)))
+
+    def test_measured_device_bias_takes_precedence_over_project_declaration(self):
+        self.load_compatible();self.current_metadata()
+        self.c('dict','set','::analog_lens::result_metadata','vds_v',.8)
+        self.c('dict','set','::analog_lens::declared','vds_v',.8)
+        self.assertEqual(len(self.call('compatible_slices',self.call('current_device'))),1)
+        self.call('use_device_conditions')
+        self.assertAlmostEqual(float(self.get('char_edit(vds)')),.9)
+        self.assertEqual(int(self.c('dict','size',self.get('workspace_choices'))),1)

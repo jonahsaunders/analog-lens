@@ -119,7 +119,7 @@ proc ::analog_lens::install_shortcuts {} {
         bind $window <$mod-$key> [list ::analog_lens::shortcut $action]
     }
     set i 0
-    foreach tab {op lut compare setup} {
+    foreach tab {op lut compare setup design} {
         incr i
         bind $window <$mod-Key-$i> [list $window.tabs select $window.tabs.$tab]
     }

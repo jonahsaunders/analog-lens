@@ -90,20 +90,20 @@ proc ::analog_lens::update_verification_text {} {
     if {[llength [info commands winfo]] && [winfo exists $w]} {
         $w configure -state normal; $w delete 1.0 end; $w insert end $text; $w configure -state disabled
     }
+    if {[llength [info commands winfo]] && [winfo exists $::analog_lens::window.verification.table]} {render_verification_view $::analog_lens::window.verification}
 }
 proc ::analog_lens::verification_dialog {} {
     show
     set w $::analog_lens::window.verification
     if {[winfo exists $w]} {raise $w; update_verification_text; return}
-    toplevel $w; wm title $w {Sizing verification · Analog Lens}; wm geometry $w 660x590
+    toplevel $w; wm title $w {Sizing verification · Analog Lens}; wm geometry $w 760x590; wm minsize $w 620 440
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
     pack [button $w.actions.compare {Compare runs} {::analog_lens::open_tab compare}] -side left
     pack [button $w.actions.close Close [list destroy $w]] -side right
-    text $w.text -wrap word -state disabled; text_style $w.text
-    ttk::scrollbar $w.scroll -command [list $w.text yview]; $w.text configure -yscrollcommand [list $w.scroll set]
-    pack $w.scroll -side right -fill y; pack $w.text -fill both -expand 1
+    build_verification_view $w
     bind $w <Escape> [list destroy $w]
     update_verification_text
+    render_verification_view $w
 }
 proc ::analog_lens::finish_result_run {} {
     verify_sizing_result

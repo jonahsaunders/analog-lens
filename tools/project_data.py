@@ -250,15 +250,39 @@ def deck_conditions(deck):
     return result
 
 
+def installed_corners(base, pdk):
+    """List sections in the actual model libraries used by this MOS profile."""
+    from check_iic import configuration
+    if pdk not in ('sky130A', 'gf180mcuD', 'ihp-sg13g2', 'ihp-sg13cmos5l'):
+        raise ValueError('Select a supported installed IIC PDK.')
+    includes = configuration(pdk, base, 'n')[0]
+    groups = []
+    for line in includes.splitlines():
+        words = tokens(line)
+        if words and words[0].lower() == '.lib' and len(words) == 3:
+            library = Path(words[1])
+            sections = set()
+            for entry in logical_lines(library.read_text()):
+                if not re.match(r'(?i)^\.lib\s+', entry):
+                    continue
+                parts = tokens(entry)
+                if len(parts) == 2 and re.fullmatch(r'[A-Za-z0-9_]+', parts[1]):
+                    sections.add(parts[1])
+            groups.append(sections)
+    return sorted(set.intersection(*groups)) if groups else []
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('devices', 'snapshot', 'check'))
+    parser.add_argument('action', choices=('devices', 'snapshot', 'check', 'corners'))
     parser.add_argument('path', type=Path)
     parser.add_argument('--pdk', default=os.environ.get('PDK', ''))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--full', action='store_true')
     args = parser.parse_args()
-    if args.action == 'check':
+    if args.action == 'corners':
+        result = installed_corners(args.path, args.pdk)
+    elif args.action == 'check':
         result = check_manifest(json.loads(args.path.read_text()), args.full)
     else:
         manifest, lines = read_graph(args.path)

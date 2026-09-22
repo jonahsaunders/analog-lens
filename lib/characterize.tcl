@@ -15,22 +15,16 @@ proc ::analog_lens::characterize_dialog {} {
     if {$pdk ni {sky130A gf180mcuD ihp-sg13g2 ihp-sg13cmos5l}} {error {Select an installed IIC PDK before characterizing.}}
     show
     set w $::analog_lens::window.characterize
-    if {[winfo exists $w]} {raise $w; return}
-    if {$::analog_lens::char_channel eq {}} {
-        set ::analog_lens::char_device $device
-        set ::analog_lens::char_pdk $pdk
-        set length [dimension_um [get $device length] [get $device family]]
-        set ::analog_lens::char_edit(lengths) [list $length [expr {2*$length}]]
-        set voltage [dict get {sky130A 1.8 gf180mcuD 3.3 ihp-sg13g2 1.2 ihp-sg13cmos5l 1.2} $pdk]
-        set ::analog_lens::char_edit(stop) $voltage
-        set sign [expr {[get $device type] eq "pmos" ? -1 : 1}]
-        set ::analog_lens::char_edit(vds) [expr {$sign*$voltage/2}]
-        set ::analog_lens::char_edit(corner) [dict get {sky130A tt gf180mcuD typical ihp-sg13g2 mos_tt ihp-sg13cmos5l mos_tt} $pdk]
+    set previous $::analog_lens::char_context
+    if {$::analog_lens::char_channel eq {}} {prepare_characterization $device}
+    if {[winfo exists $w]} {
+        if {$previous eq $::analog_lens::char_context} {raise $w; return}
+        destroy $w
     }
     toplevel $w; wm title $w {Characterize installed PDK · Analog Lens}; wm transient $w $::analog_lens::window
-    wm geometry $w 680x650; wm minsize $w 540 550
+    wm geometry $w 740x770; wm minsize $w 620 700
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
-    pack [button $w.actions.run {Generate lookup} ::analog_lens::start_characterization] -side left
+    pack [button $w.actions.run {Generate lookup} {::analog_lens::characterization_action ::analog_lens::start_characterization}] -side left
     pack [button $w.actions.cancel {Cancel run} ::analog_lens::cancel_characterization] -side left -padx 8
     pack [button $w.actions.batch {PVT / bias batch…} ::analog_lens::batch_dialog] -side left
     pack [button $w.actions.close Close [list destroy $w]] -side right
@@ -41,11 +35,20 @@ proc ::analog_lens::characterize_dialog {} {
     set i 0
     foreach {key title} {lengths {Lengths (µm, separated by spaces)} width {Total reference width (µm)} corner {Installed corner section} temp {Temperature (°C)} vds {Vds (V; negative for PMOS)} vsb {Vsb = Vs − Vb (V)} start {Starting |Vgs| (V)} stop {Ending |Vgs| (V)} step {|Vgs| step (V)}} {
         ttk::label $w.form.fields.l$key -text $title
-        ttk::entry $w.form.fields.$key -textvariable ::analog_lens::char_edit($key) -width 24
+        if {$key eq "corner"} {
+            ttk::combobox $w.form.fields.$key -textvariable ::analog_lens::char_edit($key) -values [characterization_corners] -width 24
+        } else {ttk::entry $w.form.fields.$key -textvariable ::analog_lens::char_edit($key) -width 24}
+        hint $w.form.fields.$key [characterization_hint $key]
         grid $w.form.fields.l$key -row $i -column 0 -sticky w -padx {0 16} -pady 3
         grid $w.form.fields.$key -row $i -column 1 -sticky ew -pady 3; incr i
     }
     grid columnconfigure $w.form.fields 1 -weight 1
+    ttk::button $w.form.conditions -text {Use this device's conditions} -command {::analog_lens::characterization_action ::analog_lens::use_device_conditions}
+    pack $w.form.conditions -anchor w -pady 4
+    ttk::label $w.form.help -textvariable ::analog_lens::field_help -wraplength 600 -style AL.Muted.TLabel
+    pack $w.form.help -fill x; wrapping $w.form.help
+    ttk::label $w.form.corners -textvariable ::analog_lens::corner_note -wraplength 600 -style AL.Muted.TLabel
+    pack $w.form.corners -fill x; wrapping $w.form.corners
     ttk::label $w.form.note -text {Runs real ngspice DC sweeps with the installed vendor models, one finger and one copy. Existing circuit results stay loaded. Output is stored with this project. Close hides progress; Cancel stops characterization.} -wraplength 600 -style AL.Muted.TLabel
     pack $w.form.note -fill x -pady {12 0}
     text $w.log -height 7 -wrap word -state disabled; text_style $w.log 1
@@ -59,7 +62,8 @@ proc ::analog_lens::characterization_command {output} {
     if {$pdk ne [active_pdk]} {error {The active PDK changed. Close and reopen Characterize for the current model.}}
     if {$pdk ni {sky130A gf180mcuD ihp-sg13g2 ihp-sg13cmos5l}} {error {Choose an installed IIC PDK.}}
     set python [auto_execok python3]; if {$python eq {}} {error {Python 3 is missing from the IIC environment.}}
-    set lengths [split [string trim $char_edit(lengths)]]; set clean {}
+    set normalized [normalized_characterization]
+    set lengths [dict get $normalized lengths]; set clean {}
     foreach length $lengths {
         if {$length eq {}} {continue}
         if {[number $length] eq {} || $length <= 0} {error {Lengths must be positive numbers in micrometers.}}
@@ -68,8 +72,7 @@ proc ::analog_lens::characterization_command {output} {
     if {![llength $clean]} {error {Enter at least one length.}}
     set command [list {*}$python -u [file join $root tools characterize.py] --pdk $pdk --model $model --output $output --lengths {*}$clean]
     foreach {key option} {width width temp temp vds vds vsb vsb start vgs-start stop vgs-stop step vgs-step} {
-        if {[number $char_edit($key)] eq {}} {error "$key must be a finite number."}
-        lappend command --$option $char_edit($key)
+        lappend command --$option [dict get $normalized $key]
     }
     if {![regexp {^[A-Za-z0-9_]+$} $char_edit(corner)]} {error {Use an installed library section name for the corner.}}
     lappend command --corner $char_edit(corner)
@@ -144,7 +147,7 @@ proc ::analog_lens::update_characterization_ui {} {
     }
     if {![winfo exists $w]} {return}
     set idle [expr {$::analog_lens::char_channel eq {}}]
-    set_enabled $w.actions.run $idle; set_enabled $w.actions.cancel [expr {!$idle && !$::analog_lens::char_cancelled}]
+    set_enabled $w.form.conditions $idle; set_enabled $w.actions.run $idle; set_enabled $w.actions.cancel [expr {!$idle && !$::analog_lens::char_cancelled}]
     foreach key {lengths width corner temp vds vsb start stop step} {set_enabled $w.form.fields.$key $idle}
     $w.log configure -state normal; $w.log delete 1.0 end; $w.log insert end $::analog_lens::char_log; $w.log configure -state disabled; $w.log see end
 }
@@ -157,13 +160,15 @@ proc ::analog_lens::batch_command {output} {
     variable char_edit; variable batch_edit
     # Validate shared geometry/sweep fields with the single-job command first.
     set single [characterization_command $output]
+    set normalized [normalized_characterization]
     set command [list {*}[auto_execok python3] -u [file join $::analog_lens::root tools batch_characterize.py] \
         --pdk $::analog_lens::char_pdk --model [supported_model $::analog_lens::char_device] \
         --output $output --cache [file join $::analog_lens::project_directory .analog-lens cache] \
-        --lengths {*}$char_edit(lengths)]
-    foreach {key option} {width width start vgs-start stop vgs-stop step vgs-step} {lappend command --$option $char_edit($key)}
+        --lengths {*}[dict get $normalized lengths]]
+    foreach {key option} {width width start vgs-start stop vgs-stop step vgs-step} {lappend command --$option [dict get $normalized $key]}
     foreach {key option} {corners corners temps temps vds vds-values vsb vsb-values} {
         set values $batch_edit($key)
+        if {$key ne "corners"} {set values [quantity_list $values [expr {$key eq "temps" ? "temperature" : "voltage"}]]}
         if {![llength $values]} {error "Enter at least one $key value."}
         foreach value $values {
             if {$key eq "corners"} {
@@ -215,14 +220,16 @@ proc ::analog_lens::batch_dialog {} {
     set row 0
     foreach {key title} {corners {Installed corner sections} temps {Temperatures (°C)} vds {Vds values (V; signed)} vsb {Vsb values (V)}} {
         ttk::label $w.form.fields.l$key -text $title
-        ttk::entry $w.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -width 36
+        if {$key eq "corners"} {
+            ttk::combobox $w.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -values [characterization_corners] -width 36
+        } else {ttk::entry $w.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -width 36}
         grid $w.form.fields.l$key -row $row -column 0 -sticky w -padx {0 12} -pady 6
         grid $w.form.fields.$key -row $row -column 1 -sticky ew; incr row
     }
     grid columnconfigure $w.form.fields 1 -weight 1
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
     foreach {name title command} {
-        run {Run / resume batch} {::analog_lens::start_characterization 1}
+        run {Run / resume batch} {::analog_lens::characterization_action {::analog_lens::start_characterization 1}}
         cancel Cancel ::analog_lens::cancel_characterization
         save {Save preset…} {::analog_lens::batch_preset save}
         load {Load preset…} {::analog_lens::batch_preset load}

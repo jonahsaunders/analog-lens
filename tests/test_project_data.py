@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'tools'))
-from project_data import read_graph, devices_from_lines, check_manifest, deck_conditions, tcl
+from project_data import read_graph, devices_from_lines, check_manifest, deck_conditions, tcl, installed_corners
 from batch_characterize import cache_key, valid_cache
 
 
@@ -21,6 +21,12 @@ class ProjectData(unittest.TestCase):
 
     def tearDown(self):
         self.temp.cleanup()
+
+    def test_installed_corner_choices_read_profile_library_not_guesses(self):
+        base=self.path/'pdk';lib=base/'libs.tech/ngspice';lib.mkdir(parents=True)
+        (lib/'sky130.lib.spice').write_text('.lib tt\n.endl\n.lib ss\n.endl\n.lib "external.lib" ff\n* .lib ignored\n')
+        self.assertEqual(installed_corners(base,'sky130A'),['ss','tt'])
+        with self.assertRaises(OSError):installed_corners(base,'gf180mcuD')
 
     def test_nested_repeated_hierarchy_and_multiline_parameters(self):
         lines = ['title', 'x1 d g 0 0 child', 'x10 d g 0 0 child', '.subckt child d g s b',

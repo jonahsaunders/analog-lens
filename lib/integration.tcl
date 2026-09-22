@@ -454,6 +454,7 @@ proc ::analog_lens::integration_tick {} {
             if {[get $::analog_lens::integration_options auto_lookup]} {auto_select_lookup}
         }
         update_freshness
+        refresh_workspace
         if {$::analog_lens::sidebar_open} {
             set host [xschem get top_path].analog_lens_panel
             if {$::analog_lens::sidebar ne $host || ![winfo exists $host]} {show_sidebar}

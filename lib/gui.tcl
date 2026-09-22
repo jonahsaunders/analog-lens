@@ -38,13 +38,14 @@ proc ::analog_lens::install_menu {} {
         $m add command -label $title -command [list ::analog_lens::menu_action $name]
     }
     $m add separator
-    foreach {name title} {lut {gm/Id explorer} compare {Compare runs} setup {Setup & help}} {
+    foreach {name title} {design {Size & verify} lut {gm/Id explorer} compare {Compare runs} setup {Setup & help}} {
         $m add command -label $title -command [list ::analog_lens::open_tab $name]
     }
     $m add separator
     $m add command -label {Open session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog open}}
     $m add command -label {Save session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog save}}
     $m add command -label {Check environment} -command {::analog_lens::show; ::analog_lens::check_environment}
+    $m add command -label {Set up this project…} -command ::analog_lens::setup_dialog
     $m add command -label {Project results…} -command {::analog_lens::sidebar_action ::analog_lens::results_dialog}
     $m add command -label {Project settings…} -command ::analog_lens::project_settings
     $m add command -label {Characterize selected model…} -command {::analog_lens::sidebar_action ::analog_lens::characterize_dialog}
@@ -84,6 +85,7 @@ proc ::analog_lens::show {} {
     $root.tools.session.menu add command -label {Save session…} -command {::analog_lens::safe {::analog_lens::session_dialog save}}
     $root.tools.session.menu add separator
     $root.tools.session.menu add command -label {Check environment} -command ::analog_lens::check_environment
+    $root.tools.session.menu add command -label {Set up this project…} -command ::analog_lens::setup_dialog
     $root.tools.session.menu add command -label {Project results…} -command {::analog_lens::safe ::analog_lens::results_dialog}
     $root.tools.session.menu add command -label {Project integration…} -command ::analog_lens::project_settings
     $root.tools.session.menu add command -label {Show inspector sidebar} -command {::analog_lens::sidebar_action ::analog_lens::show_sidebar}
@@ -99,7 +101,7 @@ proc ::analog_lens::show {} {
     ttk::label $root.freshness -textvariable ::analog_lens::freshness -style AL.Muted.TLabel -wraplength 850
     pack $root.freshness -side bottom -fill x; wrapping $root.freshness
     pack $window.tabs -in $root -fill both -expand 1
-    foreach {n title} {op {Operating point} lut {gm/Id explorer} compare {Compare runs} setup {Setup & help}} {
+    foreach {n title} {op {Operating point} lut {gm/Id explorer} compare {Compare runs} setup {Setup & help} design {Size & verify}} {
         ttk::frame $window.tabs.$n -style AL.TFrame -padding 12
         $window.tabs add $window.tabs.$n -text $title
         build_$n $window.tabs.$n
@@ -625,6 +627,7 @@ proc ::analog_lens::calculate_size {} {
     variable lut_rows; variable lut_slice; variable target_length; variable target_gmid; variable target_gm_u
     variable sizing_text; variable sizing_error; variable window
     set sizing_text {}; set sizing_error {}
+    if {[catch {normalize_sizing_inputs} why]} {set sizing_error "Sizing inputs must be finite numbers greater than zero. $why"; return}
     foreach {name value title} [list gmid $target_gmid {gm/Id} gm $target_gm_u {Target gm}] {
         set w $window.tabs.lut.size.$name; $w state !invalid
         if {[number $value] eq {} || $value <= 0} {
@@ -762,9 +765,9 @@ proc ::analog_lens::build_setup {w} {
     ttk::separator $w.separator; pack $w.separator -fill x -pady {0 8}
     pack [label $w.help_title {Workflow & reference} AL.Heading.TLabel] -anchor w -pady {0 8}
     ttk::frame $w.reference; pack $w.reference -fill both -expand 1
-    set help "INTEGRATED WORKFLOW\nThe sidebar follows the selected transistor. Run testbench uses xschem’s normal simulation and preserves its control commands. Project settings selects the result file/plot and enables cursor B tracking. Saved testbenches autosave targets, baselines and lookup choices.\n\nCharacterize runs real installed-PDK sweeps. Size selected opens the explorer; Preview schematic changes lists edits before Apply. Geometry uses one finger and one copy; xschem Undo restores it in one step. Return to the top level to rerun after editing subcircuits.\n\nISOLATED OPERATING POINT\n1  Open your top-level testbench with the PDK and models configured as usual.\n2  Click Operating point. The extension generates a separate netlist and saves transistor parameters automatically.\n3  Descend into your circuit. The list follows the current hierarchy. Select a transistor to inspect it.\n4  Load measured lookup CSV data, or keep a named baseline to compare an edit.\n5  Save the session to retain baselines, targets, lookup choices and layout.\n\nCancel stops only the simulator started by Analog Lens. Closing the window lets it continue.\n\nChart: select a length, inspect samples with Left/Right, zoom with +/−, and reset with Home. Export SVG saves the current view.\n\nUse Check IIC environment for setup diagnostics. Optional result conditions are user-declared; they do not change simulation settings.\n\nPDK adapters\n• SKY130A (SKY130B naming compatibility): BSIM, sky130_fd_pr wrappers.\n• GF180MCU-D (A/B/C naming compatibility): BSIM, internal m0 devices.\n• IHP SG13G2 and SG13CMOS5L: PSP/OSDI, internal n<model> devices.\n• IHP vertical NPN: Ic, Ib, gm, go, Vbe, Vbc capture; MOS-only metrics remain unavailable.\n\nNgspice must be on PATH. The IIC-OSIC-TOOLS environment supplies PDK setup and OSDI loading. This version runs ngspice; VACASK and Xyce are not supported.\n\nOperating point preserves your source schematic. Its disposable netlist removes top-level .control blocks and analyses, retains models, sources and parameters, then inserts an OP run. Changes made only inside your .control block (alter, alterparam, pre_osdi, etc.) must also be present in the deck/environment, or use Load results from your own simulation.\n\nFor loaded DC/transient data, Sample and Dataset select the exact saved point. Missing parameters show —. No time interpolation or guessed values.\n\nUse Export CSV to save results. The lookup template and optional MAT converter are included in the extension folder."
+    set help "INTEGRATED WORKFLOW\nThe sidebar follows the selected transistor. Run testbench uses xschem’s normal simulation and preserves its control commands. Project settings selects the result file/plot and enables cursor B tracking. Saved testbenches autosave targets, baselines and lookup choices.\n\nCharacterize runs real installed-PDK sweeps. Size selected opens the explorer; Preview schematic changes lists edits before Apply. Size & verify keeps targets, geometry preview and measured verification together. Blank finger/copy counts preserve the current geometry; explicit counts use the supported PDK limits. One xschem Undo restores the edit. Return to the top level to rerun after editing subcircuits.\n\nISOLATED OPERATING POINT\n1  Open your top-level testbench with the PDK and models configured as usual.\n2  Click Operating point. The extension generates a separate netlist and saves transistor parameters automatically.\n3  Descend into your circuit. The list follows the current hierarchy. Select a transistor to inspect it.\n4  Load measured lookup CSV data, or keep a named baseline to compare an edit.\n5  Save the session to retain baselines, targets, lookup choices and layout.\n\nCancel stops only the simulator started by Analog Lens. Closing the window lets it continue.\n\nChart: select a length, inspect samples with Left/Right, zoom with +/−, and reset with Home. Export SVG saves the current view.\n\nUse Set up this project for optional setup checks and result-path selection. Use this device’s conditions copies known values; unknown fields remain blank. Target gm accepts 800 µS or 0.8 mS. Installed corner sections are offered when available. Optional result conditions are user-declared; they do not change simulation settings.\n\nPDK adapters\n• SKY130A (SKY130B naming compatibility): BSIM, sky130_fd_pr wrappers.\n• GF180MCU-D (A/B/C naming compatibility): BSIM, internal m0 devices.\n• IHP SG13G2 and SG13CMOS5L: PSP/OSDI, internal n<model> devices.\n• IHP vertical NPN: Ic, Ib, gm, go, Vbe, Vbc capture; MOS-only metrics remain unavailable.\n\nNgspice must be on PATH. The IIC-OSIC-TOOLS environment supplies PDK setup and OSDI loading. This version runs ngspice; VACASK and Xyce are not supported.\n\nOperating point preserves your source schematic. Its disposable netlist removes top-level .control blocks and analyses, retains models, sources and parameters, then inserts an OP run. Changes made only inside your .control block (alter, alterparam, pre_osdi, etc.) must also be present in the deck/environment, or use Load results from your own simulation.\n\nFor loaded DC/transient data, Sample and Dataset select the exact saved point. Missing parameters show —. No time interpolation or guessed values.\n\nUse Export CSV to save results. The lookup template and optional MAT converter are included in the extension folder."
     set modifier Ctrl
-    append help "\n\nKeyboard shortcuts\n$modifier+F  Find a device\n$modifier+O  Load results\n$modifier+R  Refresh results\n$modifier+Shift+R  Run operating point\n$modifier+Shift+S  Export CSV\n$modifier+1–4  Switch tabs\n$modifier+W  Close this window\nTab / Shift+Tab  Move between controls\nReturn  Locate the selected device, calculate sizing, or apply the focused form\nEscape in search  Clear filters\n\nThe Sort menu is a keyboard-accessible alternative to clicking table headers. View data opens a table of the plotted lookup values."
+    append help "\n\nKeyboard shortcuts\n$modifier+F  Find a device\n$modifier+O  Load results\n$modifier+R  Refresh results\n$modifier+Shift+R  Run operating point\n$modifier+Shift+S  Export CSV\n$modifier+1–5  Switch tabs\n$modifier+W  Close this window\nTab / Shift+Tab  Move between controls\nReturn  Locate the selected device, calculate sizing, or apply the focused form\nEscape in search  Clear filters\n\nThe Sort menu is a keyboard-accessible alternative to clicking table headers. View data opens a table of the plotted lookup values."
     text $w.help -wrap word -height 8 -width 50; text_style $w.help
     $w.help insert end $help; $w.help configure -state disabled
     ttk::scrollbar $w.scroll -command [list $w.help yview]; $w.help configure -yscrollcommand [list $w.scroll set]

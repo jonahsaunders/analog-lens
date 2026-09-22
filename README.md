@@ -1,14 +1,14 @@
 # Analog Lens for xschem
 
-New in v0.5: measured sizing verification, finger/copy controls, netlist-based hierarchy discovery, dependency fingerprints, and a project results browser with reusable PVT/bias characterization batches. See the [v0.5 workflow guide](docs/INTEGRATION_V05.md).
+New in v0.6: a unified **Size & verify** workspace, device-condition reuse, actionable recovery, optional project setup, visual verification, flexible units and installed corner choices. See the [usability guide](docs/USABILITY_V06.md).
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
 
-Version **0.5.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
+Version **0.6.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
 The **inspector sidebar** connects normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. The new [v0.5 workflow guide](docs/INTEGRATION_V05.md) covers measured verification, project history and characterization batches.
 
-**Validated in IIC 2026.08:** 104 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167) includes measured sizing verification, archived results and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+**v0.5 validation baseline in IIC 2026.08:** 104 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167) includes measured sizing verification, archived results and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
 
 ## Interface preview
 
@@ -35,7 +35,7 @@ The inspector and help text scroll, numeric columns sort in both directions, and
 | Refresh | Ctrl+R |
 | Run operating point | Ctrl+Shift+R |
 | Export CSV | Ctrl+Shift+S |
-| Switch tabs | Ctrl+1–4 |
+| Switch tabs | Ctrl+1–5 |
 | Close Analog Lens | Ctrl+W |
 | Inspect chart samples | Left / Right while chart has focus |
 | Zoom / reset chart | + / − / Home while chart has focus |
@@ -75,8 +75,8 @@ Requirements: xschem with Tcl/Tk 8.6 or newer and the documented `xschem raw` AP
 2. Select a transistor to inspect it in the sidebar.
 3. Use **Run testbench**, or xschem’s normal Netlist/Simulate controls. Your `.control` commands stay intact; the extension attaches new raw results when the run succeeds.
 4. Open **Project settings…** to choose a result file/plot or follow waveform cursor B.
-5. Use **Characterize…** for measured lookup curves and **Size selected…** to preview geometry changes, apply with Undo, and rerun for comparison.
-6. Check **Sizing verification** for measured target errors. Use **Project results** to reopen archived runs, compare named baselines, or start a reusable PVT/bias batch.
+5. Use **Characterize…** for measured lookup curves and **Size selected…** to open the unified workspace. **Use this device’s conditions** fills known characterization inputs and finds compatible saved lookup data.
+6. Use **Size & verify** to keep targets, inline preview and measured target errors together. Use **Project results** to reopen archived runs, compare named baselines, or start a reusable PVT/bias batch.
 
 [Complete workflow, settings and limits](docs/INTEGRATION_V05.md).
 

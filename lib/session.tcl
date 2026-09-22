@@ -111,11 +111,14 @@ proc ::analog_lens::session_data {} {
     foreach key {live only_review sizing_visible sort_key sort_desc lut_y lut_length target_gmid target_gm_u target_length} {
         dict set prefs $key [set ::analog_lens::$key]
     }
+    foreach {key kind} {target_gm_u gm target_gmid gmid target_length length} {
+        if {[get $prefs $key] ne {}} {dict set prefs $key [quantity [get $prefs $key] $kind]}
+    }
     set data [dict create format analog-lens-session schema 1 limits $limits declared $declared baselines $baselines \
         baseline_choice $baseline_choice preferences $prefs geometry $session_geometry sash $session_sash \
         lookup_file $lut_file lookup_slice $lut_slice]
     if {[info exists ::analog_lens::integration_options]} {dict set data integration $::analog_lens::integration_options}
-    dict set data geometry_options [dict create fingers $::analog_lens::target_fingers copies $::analog_lens::target_copies tolerance $::analog_lens::verification_tolerance]
+    dict set data geometry_options [dict create fingers $::analog_lens::target_fingers copies $::analog_lens::target_copies tolerance [quantity $::analog_lens::verification_tolerance percent]]
     validate_session $data
     return $data
 }
