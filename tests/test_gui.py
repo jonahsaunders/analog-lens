@@ -243,7 +243,7 @@ class NativeGUI(unittest.TestCase):
         self.call('keep_baseline')
         self.c('wm', 'geometry', W, '1100x780')
         self.settle()
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
             path = str(Path(temp) / 'run.alsession')
             self.call('save_session', path)
             self.set('baselines', '')
@@ -273,7 +273,7 @@ class NativeGUI(unittest.TestCase):
         after = tuple(map(float, self.get('plot_bounds')))
         self.assertLess(after[1] - after[0], before[1] - before[0])
         self.call('reset_plot')
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
             path = Path(temp) / 'chart.svg'
             self.call('export_plot_svg', str(path))
             root = ET.parse(path).getroot()
@@ -302,7 +302,7 @@ class NativeGUI(unittest.TestCase):
         self.app.tk.eval('set r [lindex $::analog_lens::records 0]; dict set r name M3; lappend ::analog_lens::records $r')
         self.call('render_compare')
         self.assertIn('1 added', self.get('compare_summary'))
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
             path = Path(temp) / 'comparison.csv'
             self.call('export_comparison', str(path))
             import csv

@@ -8,7 +8,7 @@ command -v "$al_engine" >/dev/null || { echo "Install Docker/Podman, or run tool
 mkdir -p "$al_root/build/iic"
 "$al_engine" pull "$al_image"
 "$al_engine" image inspect "$al_image" > "$al_root/build/iic/image.json"
-"$al_engine" run --rm --entrypoint /bin/bash \
+"$al_engine" run --rm --user "$(id -u):$(id -g)" --entrypoint /bin/bash \
     -v "$al_root:/foss/designs/analog-lens" -w /foss/designs/analog-lens \
     "$al_image" -lc '
         set -e

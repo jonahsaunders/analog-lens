@@ -134,10 +134,15 @@ def main():
     try:
         code = run_logged([sys.executable, str(ROOT/'tools/run_tests.py'), '--require-gui'], out/'tests.log')
         record('native-suite', 'passed' if code == 0 else 'failed')
+        if code: print((out/'tests.log').read_text()[-10000:], flush=True)
         command = [sys.executable, str(ROOT/'tools/check_iic.py'), '--pdk-root', str(args.pdk_root), '--output', str(out/'pdk')]
         if args.require_all: command.append('--require-all')
         code = run_logged(command, out/'pdk.log', timeout=900)
         record('ngspice-pdk-metrics', 'passed' if code == 0 else 'failed')
+        if code:
+            print((out/'pdk.log').read_text()[-10000:], flush=True)
+            for log in (out/'pdk').rglob('*.log'):
+                print(log.name, log.read_text()[-3000:], flush=True)
     except (OSError, subprocess.TimeoutExpired) as exc:
         record('test-runner', 'failed', error=str(exc))
     for pdk in PDKS:
@@ -158,6 +163,8 @@ def main():
             record(pdk+'-xschem', 'passed')
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
             record(pdk+'-xschem', 'failed', error=str(exc))
+            log = directory/'xschem.log'
+            if log.is_file(): print(log.read_text()[-10000:], flush=True)
     print('Report:', report_path)
     return 1 if any(check['status']=='failed' for check in report['checks']) else 0
 

@@ -138,7 +138,7 @@ class Engine(unittest.TestCase):
     def test_op_deck_rejects_bad_blocks(self):
         with self.assertRaises(tkinter.TclError):self.call('op_deck','test\n.control\nop\n','','a.raw')
     def test_io(self):
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as d:
+        with tempfile.TemporaryDirectory(dir=ROOT) as d:
             path=Path(d)/'unicode.txt';self.call('write_text',str(path),'µΩ\n');self.assertEqual(self.call('read_text',str(path)),'µΩ\n')
     def test_loader_idempotent(self):
         self.t.eval('set ::analog_lens::sample 17')
@@ -175,7 +175,7 @@ class Engine(unittest.TestCase):
         # Real subprocess/fileevents; fake executable and xschem API, not ngspice.
         self.t.call('source',str(ROOT/'tests/mock_xschem.tcl'))
         self.t.eval('rename ::analog_lens::render {}; proc ::analog_lens::render {} {}; rename ::analog_lens::update_run_controls {}; proc ::analog_lens::update_run_controls {} {}')
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as d:
+        with tempfile.TemporaryDirectory(dir=ROOT) as d:
             d=Path(d); exe=d/'ngspice'
             exe.write_text('#!'+sys.executable+'\nimport sys,re,pathlib\ns=pathlib.Path(sys.argv[-1]).read_text()\np=re.search(r\'write "([^"]+)"\',s).group(1)\npathlib.Path(p).write_text("fixture raw")\nprint("fixture complete")\n')
             exe.chmod(0o755)
@@ -199,14 +199,14 @@ class Installer(unittest.TestCase):
     def setUp(self):
         spec=importlib.util.spec_from_file_location('al_install',ROOT/'install.py');self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
     def test_preserve_pdk_and_idempotence(self):
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as d:
+        with tempfile.TemporaryDirectory(dir=ROOT) as d:
             d=Path(d);rc=d/'xschemrc';rc.write_text('source /pdk/xschemrc\nset my_custom_var 7\n')
             dest=d/'plugin';_,backup=self.mod.install(ROOT,dest,rc)
             self.assertTrue(backup.exists());self.assertIn('source /pdk/xschemrc',rc.read_text())
             before=rc.read_text();_,backup2=self.mod.install(ROOT,dest,rc)
             self.assertIsNone(backup2);self.assertEqual(rc.read_text(),before)
     def test_missing_rc_refused(self):
-        with tempfile.TemporaryDirectory(dir=ROOT.parent) as d:
+        with tempfile.TemporaryDirectory(dir=ROOT) as d:
             with self.assertRaises(ValueError):self.mod.install(ROOT,Path(d)/'plugin',Path(d)/'missing')
 
 if __name__=='__main__':unittest.main()
