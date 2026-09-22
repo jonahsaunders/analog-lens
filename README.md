@@ -2,7 +2,15 @@
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu and a resizable analysis window inside xschem's process. No browser, server, account, or Python service is required.
 
-Version 0.1.0 is an initial implementation. The numerical engine, adapters, data parsing, and xschem API contracts have automated tests. Actual xschem/PDK simulations and rendered GUI validation require an IIC-OSIC-TOOLS installation; those were not available in the build environment. See `PDK_SUPPORT.md` for the exact support boundary.
+Version 0.1.0 is an initial implementation. The numerical engine, adapters, data parsing, and xschem API contracts have automated tests. The screenshots below show the real Tk interface with synthetic fixtures. Actual xschem/PDK simulations and GUI validation inside xschem require an IIC-OSIC-TOOLS installation; those were not available in the build environment. See `PDK_SUPPORT.md` for the exact support boundary.
+
+## Interface preview
+
+![Analog Lens operating-point inspector showing M1 and M2, their gm/Id and intrinsic gain, and the selected device's detailed metrics.](docs/images/operating-point.png)
+
+**Operating-point inspector.** Browse device results, spot devices needing review, and inspect the selected transistor. This is a native Tk capture using the repository's synthetic test fixture, not measured PDK results. Missing parameters remain `—`.
+
+See the [gm/Id explorer preview](#gmid-explorer) below. [Screenshot sources and regeneration instructions](docs/images/README.md) are included.
 
 ## Install in IIC-OSIC-TOOLS
 
@@ -52,6 +60,10 @@ You can use **Load results…** with `op`, `dc`, or `tran`. Set **Sample** and *
 Changing tabs or hierarchy while ngspice runs will not load results into the wrong schematic; the status bar tells you which raw file to load after returning to the testbench.
 
 ## gm/Id explorer
+
+![Analog Lens gm/Id explorer showing illustrative intrinsic-gain curves for 0.3 and 0.6 micrometer channel lengths, plus a sizing estimate.](docs/images/gmid-explorer.png)
+
+**gm/Id explorer.** Native Tk capture using `examples/lookup-template.csv`, labeled `DEMO_ONLY`. The curves and sizing estimate are illustrative synthetic data, not a characterized PDK.
 
 Load measured CSV lookup data. It groups by PDK, model, corner, temperature, Vds, Vsb, and total reference width. Within that fixed slice, each channel length is a separate curve. You can plot intrinsic gain, estimated fT, or current density against gm/Id. When a matching model is selected in the inspector, its actual gain/fT operating point can appear as a dot; verify the circuit's corner, temperature and bias yourself.
 
