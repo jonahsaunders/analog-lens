@@ -455,6 +455,8 @@ class Integration(unittest.TestCase):
 
     def test_measured_device_bias_takes_precedence_over_project_declaration(self):
         self.load_compatible();self.current_metadata()
+        self.c('dict','set','::mock::vectors','v(vd)',.90000001)
+        self.call('refresh')
         self.c('dict','set','::analog_lens::result_metadata','vds_v',.8)
         self.c('dict','set','::analog_lens::declared','vds_v',.8)
         self.assertEqual(len(self.call('compatible_slices',self.call('current_device'))),1)

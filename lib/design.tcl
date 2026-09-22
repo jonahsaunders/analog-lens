@@ -29,11 +29,11 @@ proc ::analog_lens::compatible_slices {device} {
     set model [normalized_model [get $device model]]; set pdk [active_pdk]
     set conditions $declared
     if {[get [get $result_metadata raw] path] ne {}} {set conditions $result_metadata}
-    # Measured terminal biases describe this device; a project-wide declared
-    # comparison bias must not override them when choosing its curve.
+    # Measured biases are checked with the transport tolerance below. Exclude
+    # their project-wide declarations from the exact metadata comparison.
     foreach {key metric sign} {vds_v terminal_vds 1 vsb_v terminal_vbs -1} {
         set value [number [get [get $device values] $metric]]
-        if {$value ne {}} {dict set conditions $key [expr {$sign*$value}]}
+        if {$value ne {}} {dict unset conditions $key}
     }
     set found {}
     foreach row $lut_rows {
