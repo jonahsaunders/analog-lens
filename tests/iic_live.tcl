@@ -154,6 +154,9 @@ if {[catch {
 
     # Drive the actual asynchronous characterization GUI once per PDK.
     stage characterization
+    # Undo/raw loading can clear the host selection. Select the target again
+    # just as a user does before opening its model characterization form.
+    xschem unselect_all; xschem select instance M1
     ::analog_lens::characterize_dialog
     array set ::analog_lens::char_edit {lengths 0.5 width 10 temp 27 vds 0.7 vsb 0 start 0.4 stop 1.0 step 0.1}
     ::analog_lens::start_characterization
