@@ -71,6 +71,7 @@ proc ::analog_lens::refresh_results_if_open {} {
 proc ::analog_lens::refresh_results {args} {
     set tree $::analog_lens::window.results.tree
     if {![winfo exists $tree]} {return}
+    set previous [get $::analog_lens::results_items [lindex [$tree selection] 0]]
     $tree delete [$tree children {}]; set ::analog_lens::results_items {}
     set query [string tolower [string trim $::analog_lens::results_query]]; set count 0
     foreach entry [project_catalog] {
@@ -80,14 +81,22 @@ proc ::analog_lens::refresh_results {args} {
         set details [get $entry samples]
         if {[get $entry kind] eq "Lookup"} {append details { samples}} else {set details [get [get $entry metadata] pdk]}
         $tree insert {} end -id $id -values [list [get $entry kind] [get $entry name] [get $entry models] $details]
+        if {$previous ne {} && [get $previous kind] eq [get $entry kind] && [get $previous path] eq [get $entry path] && [get $previous name] eq [get $entry name]} {$tree selection set $id}
     }
-    set ::analog_lens::results_status "$count entries · Select a run to load, a baseline to compare, or a lookup to explore."
+    set ::analog_lens::results_status [expr {$count ? "$count entries · Select a run to load, a baseline to compare, or a lookup to explore." : "No matching results. Clear the search or choose All. Run a testbench or generate a lookup to add results."}]
+    results_selection
 }
 proc ::analog_lens::selected_result {} {
     set tree $::analog_lens::window.results.tree
     set selected [$tree selection]
     if {[llength $selected] != 1} {error {Select one project result.}}
     return [dict get $::analog_lens::results_items [lindex $selected 0]]
+}
+proc ::analog_lens::results_selection {} {
+    set w $::analog_lens::window.results
+    if {![winfo exists $w.tree]} {return}
+    set selected [expr {[llength [$w.tree selection]] == 1}]
+    foreach name {open details} {set_enabled $w.actions.$name $selected}
 }
 proc ::analog_lens::open_project_result {} {
     set entry [selected_result]
@@ -128,8 +137,15 @@ proc ::analog_lens::result_details {} {
     set w $::analog_lens::window.results.details
     if {[winfo exists $w]} {destroy $w}
     toplevel $w; wm title $w {Result details}; wm geometry $w 680x400
-    text $w.text -wrap word; text_style $w.text; pack $w.text -fill both -expand 1
-    $w.text insert end $text; $w.text configure -state disabled; bind $w <Escape> [list destroy $w]
+    wm minsize $w 440 280
+    ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
+    pack [button $w.actions.copy {Copy details} [list ::analog_lens::copy_text $text]] -side left
+    pack [button $w.actions.close Close [list ::analog_lens::close_dialog $w]] -side right
+    text $w.text -wrap word; text_style $w.text
+    ttk::scrollbar $w.scroll -command [list $w.text yview]; $w.text configure -yscrollcommand [list $w.scroll set]
+    pack $w.scroll -side right -fill y; pack $w.text -fill both -expand 1
+    dialog_chrome $w $w.text
+    $w.text insert end $text; $w.text configure -state disabled
 }
 proc ::analog_lens::results_dialog {} {
     project_sync; history_directory; show
@@ -154,10 +170,21 @@ proc ::analog_lens::results_dialog {} {
     foreach {col title width} {kind Kind 85 name Name 320 models Models 230 details Details 180} {
         $w.tree heading $col -text $title; $w.tree column $col -width $width -minwidth 60
     }
-    ttk::scrollbar $w.scroll -command [list $w.tree yview]; $w.tree configure -yscrollcommand [list $w.scroll set]
-    pack $w.scroll -side right -fill y; pack $w.tree -fill both -expand 1
+    ttk::frame $w.tablearea; pack $w.tablearea -fill both -expand 1
+    ttk::scrollbar $w.scroll -command [list $w.tree yview]
+    ttk::scrollbar $w.xscroll -orient horizontal -command [list $w.tree xview]
+    $w.tree configure -yscrollcommand [list $w.scroll set] -xscrollcommand [list $w.xscroll set]
+    grid $w.tree -in $w.tablearea -row 0 -column 0 -sticky nsew
+    grid $w.scroll -in $w.tablearea -row 0 -column 1 -sticky ns
+    grid $w.xscroll -in $w.tablearea -row 1 -column 0 -sticky ew
+    grid columnconfigure $w.tablearea 0 -weight 1; grid rowconfigure $w.tablearea 0 -weight 1
+    raise $w.tree $w.tablearea; raise $w.scroll; raise $w.xscroll
+    bind $w.tree <<TreeviewSelect>> ::analog_lens::results_selection
     bind $w.tree <Return> {::analog_lens::safe ::analog_lens::open_project_result}
     bind $w.tree <Double-1> {::analog_lens::safe ::analog_lens::open_project_result}
     bind $w <Escape> [list destroy $w]
+    dialog_chrome $w $w.search.query $w.actions.open
+    action_bar $w.actions {open details batch close}
+    wrapping $w.status
     refresh_results; focus $w.search.query
 }

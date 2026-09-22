@@ -430,7 +430,7 @@ class Integration(unittest.TestCase):
     def test_optional_setup_does_not_run_and_saves_result_choice(self):
         self.assertFalse(self.c('winfo','exists','.analog_lens.onboarding'))
         self.call('setup_dialog');self.app.update()
-        self.assertEqual(len(self.c('.analog_lens.onboarding.body.checks','children','')),7)
+        self.assertEqual(len(self.c('.analog_lens.onboarding.page.canvas.content.body.checks','children','')),7)
         self.set('setup_result','chosen.raw');self.set('setup_analysis','op');self.call('setup_save')
         self.assertEqual(str(self.c('dict','get',self.get('integration_options'),'result_path')),'chosen.raw')
         self.assertEqual(int(self.c('dict','size',self.get('native_jobs'))),0)
@@ -440,11 +440,11 @@ class Integration(unittest.TestCase):
         result=self.call('evaluate_targets',plan,'gm .0012 gmid 15')
         self.set('verification_result',result);self.set('verification_summary','Miss')
         self.call('verification_dialog');self.app.update()
-        self.assertEqual(len(self.c('.analog_lens.verification.table','children','')),2)
-        self.assertEqual(len(self.c('.analog_lens.verification.chart','find','withtag','tolerance')),2)
-        self.assertEqual(len(self.c('.analog_lens.verification.chart','find','withtag','after')),2)
+        self.assertEqual(len(self.c('.analog_lens.verification.page.canvas.content.view.table','children','')),2)
+        self.assertEqual(len(self.c('.analog_lens.verification.page.canvas.content.view.chart','find','withtag','tolerance')),2)
+        self.assertEqual(len(self.c('.analog_lens.verification.page.canvas.content.view.chart','find','withtag','after')),2)
         self.set('workspace_details',1);self.call('verification_details','.analog_lens.verification')
-        self.app.update();self.assertTrue(self.c('winfo','ismapped','.analog_lens.verification.details'))
+        self.app.update();self.assertTrue(self.c('winfo','ismapped','.analog_lens.verification.page.canvas.content.view.details'))
 
     def test_characterization_accepts_units_without_mutating_input_or_polarity(self):
         self.call('characterize_dialog')

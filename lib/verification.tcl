@@ -90,7 +90,7 @@ proc ::analog_lens::update_verification_text {} {
     if {[llength [info commands winfo]] && [winfo exists $w]} {
         $w configure -state normal; $w delete 1.0 end; $w insert end $text; $w configure -state disabled
     }
-    if {[llength [info commands winfo]] && [winfo exists $::analog_lens::window.verification.table]} {render_verification_view $::analog_lens::window.verification}
+    if {[llength [info commands winfo]] && [winfo exists $::analog_lens::window.verification.page.canvas.content.view.table]} {render_verification_view $::analog_lens::window.verification.page.canvas.content.view}
 }
 proc ::analog_lens::verification_dialog {} {
     show
@@ -100,10 +100,12 @@ proc ::analog_lens::verification_dialog {} {
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
     pack [button $w.actions.compare {Compare runs} {::analog_lens::open_tab compare}] -side left
     pack [button $w.actions.close Close [list destroy $w]] -side right
-    build_verification_view $w
-    bind $w <Escape> [list destroy $w]
+    set b [dialog_page $w]
+    ttk::frame $b.view -padding 12; pack $b.view -fill both -expand 1
+    build_verification_view $b.view
+    dialog_chrome $w $b.view.table
     update_verification_text
-    render_verification_view $w
+    render_verification_view $b.view
 }
 proc ::analog_lens::finish_result_run {} {
     verify_sizing_result

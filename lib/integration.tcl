@@ -421,27 +421,34 @@ proc ::analog_lens::project_settings {} {
     set w $::analog_lens::window.project
     if {[winfo exists $w]} {raise $w; return}
     toplevel $w; wm title $w {Project integration · Analog Lens}; wm transient $w $::analog_lens::window
-    ttk::frame $w.body -padding 16; pack $w.body -fill both -expand 1
+    set b [dialog_page $w]
+    ttk::frame $b.body -padding 16; pack $b.body -fill both -expand 1
     dict for {key value} $::analog_lens::integration_options {set ::analog_lens::integration_edit($key) $value}
     foreach {key title} {auto_results {Attach results after xschem simulations} device_saves {Add device saves to generated ngspice decks} follow_cursor {Follow waveform cursor B (nearest saved point)} auto_lookup {Select compatible lookup curves for the device}} {
-        ttk::checkbutton $w.body.$key -text $title -variable ::analog_lens::integration_edit($key)
-        pack $w.body.$key -anchor w -pady 4
+        ttk::checkbutton $b.body.$key -text $title -variable ::analog_lens::integration_edit($key)
+        pack $b.body.$key -anchor w -pady 4
     }
-    pack [label $w.body.resultlabel {Result file (blank = detect; relative paths use netlist directory)}] -anchor w -pady {12 4}
-    ttk::entry $w.body.result -textvariable ::analog_lens::integration_edit(result_path) -width 58; pack $w.body.result -fill x
-    pack [label $w.body.analysislabel {Analysis to load}] -anchor w -pady {8 4}
-    ttk::combobox $w.body.analysis -textvariable ::analog_lens::integration_edit(result_analysis) -values {auto op dc tran} -state readonly; pack $w.body.analysis -anchor w
-    pack [label $w.body.note {The testbench must write a raw file. Control blocks stay intact. Sessions autosave in the project's .analog-lens folder; an invalid existing session is preserved.} AL.Muted.TLabel] -fill x -pady 12
-    $w.body.note configure -wraplength 460
-    pack [button $w.body.apply {Apply settings} [list ::analog_lens::apply_project_settings $w]] -anchor e
-    bind $w <Escape> [list destroy $w]
+    pack [label $b.body.resultlabel {Result file (blank = detect; relative paths use netlist directory)}] -fill x -pady {12 4}
+    ttk::entry $b.body.result -textvariable ::analog_lens::integration_edit(result_path) -width 58; pack $b.body.result -fill x
+    pack [label $b.body.analysislabel {Analysis to load}] -anchor w -pady {8 4}
+    ttk::combobox $b.body.analysis -textvariable ::analog_lens::integration_edit(result_analysis) -values {auto op dc tran} -state readonly; pack $b.body.analysis -anchor w
+    pack [label $b.body.note {The testbench must write a raw file. Control blocks stay intact. Sessions autosave in the project's .analog-lens folder; an invalid existing session is preserved.} AL.Muted.TLabel] -fill x -pady 12
+    $b.body.note configure -wraplength 460
+    pack [button $b.body.apply {Apply settings} [list ::analog_lens::apply_project_settings $w]] -anchor e
+    ttk::frame $w.actions -padding 12; pack $w.actions -before $w.page -side bottom -fill x
+    destroy $b.body.apply
+    pack [button $w.actions.apply {Apply settings} [list ::analog_lens::apply_project_settings $w]] -side right
+    pack [button $w.actions.cancel Cancel [list ::analog_lens::close_dialog $w]] -side right -padx 8
+    wm geometry $w 720x510; wm minsize $w 580 360
+    wrapping $b.body.note; wrapping $b.body.resultlabel
+    dialog_chrome $w $b.body.auto_results $w.actions.apply
 }
 proc ::analog_lens::apply_project_settings {w} {
     set next $::analog_lens::integration_options
     foreach key [dict keys $next] {dict set next $key $::analog_lens::integration_edit($key)}
     set data [session_data]; dict set data integration $next; validate_session $data
     set ::analog_lens::integration_options $next; set ::analog_lens::cursor_key {}
-    project_flush; destroy $w
+    project_flush; close_dialog $w
 }
 proc ::analog_lens::integration_tick {} {
     set ::analog_lens::integration_timer {}

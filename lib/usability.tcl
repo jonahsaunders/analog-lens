@@ -40,13 +40,31 @@ proc ::analog_lens::quantity_list {text kind} {
 proc ::analog_lens::normalize_sizing_inputs {} {
     set next {}
     foreach {key kind} {target_length length target_gmid gmid target_gm_u gm verification_tolerance percent} {
-        dict set next $key [quantity [set ::analog_lens::$key] $kind]
+        set root $::analog_lens::window.tabs.design.body.canvas.content.inputs
+        set widget $root.$key
+        if {$key eq "verification_tolerance"} {set widget $root.advanced.$key}
+        if {[catch {quantity [set ::analog_lens::$key] $kind} value]} {
+            if {$key eq "verification_tolerance" && [llength [info commands winfo]] && [winfo exists $widget]} {
+                set ::analog_lens::workspace_advanced 1; workspace_advanced
+            }
+            field_error $widget "[dict get {target_length Length target_gmid gm/Id target_gm_u gm verification_tolerance Tolerance} $key]: $value"
+        }
+        if {[llength [info commands winfo]] && [winfo exists $widget]} {$widget state !invalid}
+        dict set next $key $value
     }
     dict for {key value} $next {if {[set ::analog_lens::$key] ne $value} {set ::analog_lens::$key $value}}
 }
-proc ::analog_lens::hint {widget text} {
-    bind $widget <FocusIn> +[list set ::analog_lens::field_help $text]
-    bind $widget <Enter> +[list set ::analog_lens::field_help $text]
+proc ::analog_lens::field_error {widget message} {
+    if {[llength [info commands winfo]] && [winfo exists $widget]} {
+        $widget state invalid; focus $widget
+        set clear [list $widget state !invalid]
+        if {[string first $clear [bind $widget <KeyRelease>]] < 0} {bind $widget <KeyRelease> +$clear}
+    }
+    return -code error $message
+}
+proc ::analog_lens::hint {widget text {variable ::analog_lens::field_help}} {
+    bind $widget <FocusIn> +[list set $variable $text]
+    bind $widget <Enter> +[list set $variable $text]
 }
 proc ::analog_lens::scroll_page {w} {
     canvas $w.canvas -highlightthickness 0 -borderwidth 0 -background [dict get $::analog_lens::colors bg]
@@ -121,8 +139,8 @@ proc ::analog_lens::build_design {w} {
     flow_controls $b.conditions.actions {use load generate} 800
     bind $b.conditions.actions <Configure> [list ::analog_lens::flow_controls $b.conditions.actions {use load generate} %w]
     ttk::label $b.conditions.note -textvariable ::analog_lens::workspace_conditions; pack $b.conditions.note -fill x -pady 5; wrapping $b.conditions.note
+    ttk::label $b.conditions.choicelabel -text {Matching saved lookups}
     ttk::combobox $b.conditions.choice -textvariable ::analog_lens::workspace_choice -state readonly
-    pack $b.conditions.choice -fill x
     bind $b.conditions.choice <<ComboboxSelected>> {::analog_lens::workspace_action ::analog_lens::choose_workspace_lookup}
     ttk::label $b.conditions.lookup -textvariable ::analog_lens::workspace_lookup -style AL.Muted.TLabel
     pack $b.conditions.lookup -fill x -pady {4 0}; wrapping $b.conditions.lookup
@@ -180,6 +198,7 @@ proc ::analog_lens::build_design {w} {
     bind $::analog_lens::window <Button-4> {+::analog_lens::workspace_wheel %W -3}
     bind $::analog_lens::window <Button-5> {+::analog_lens::workspace_wheel %W 3}
     bind $::analog_lens::window <MouseWheel> {+::analog_lens::workspace_wheel %W [expr {-%D/120}]}
+    $b.inputs.actions.apply configure -style AL.Primary.TButton
     refresh_workspace
 }
 proc ::analog_lens::workspace_wheel {widget delta} {
@@ -259,6 +278,10 @@ proc ::analog_lens::refresh_workspace {} {
     set lengths {}; foreach row $::analog_lens::lut_rows {if {[get $row slice] eq $::analog_lens::lut_slice} {lappend lengths [get $row length_um]}}
     $b.inputs.target_length configure -values [lsort -real -unique $lengths]
     $b.conditions.choice configure -values [dict keys $::analog_lens::workspace_choices]
+    if {[dict size $::analog_lens::workspace_choices] > 1} {
+        pack $b.conditions.choicelabel -before $b.conditions.lookup -anchor w -pady {8 3}
+        pack $b.conditions.choice -before $b.conditions.lookup -fill x
+    } else {pack forget $b.conditions.choicelabel $b.conditions.choice}
     set ::analog_lens::workspace_lookup [expr {$::analog_lens::lut_file eq {} ? "No lookup loaded." : "Loaded: [file tail $::analog_lens::lut_file] · [join $::analog_lens::lut_slice { · }]"}]
     set plan $::analog_lens::size_plan
     set ready [expr {$plan ne {} && [get $plan context] eq [context] && [get $plan targets] eq [sizing_targets]}]
@@ -292,6 +315,7 @@ proc ::analog_lens::device_conditions {device} {
 }
 proc ::analog_lens::use_device_conditions {} {
     if {$::analog_lens::char_channel ne {}} {error {Wait for characterization to finish before changing its inputs.}}
+    refresh_workspace
     set device [current_device]; supported_model $device
     set conditions [device_conditions $device]
     prepare_characterization $device
@@ -360,13 +384,18 @@ proc ::analog_lens::build_verification_view {w} {
     dict unset ::analog_lens::workspace_render_key $w
     ttk::label $w.summary -textvariable ::analog_lens::verification_summary -style AL.Heading.TLabel -wraplength 400
     pack $w.summary -fill x -pady {0 8}; wrapping $w.summary
-    ttk::treeview $w.table -columns {metric target before after error} -show headings -height 2 -selectmode none
+    ttk::treeview $w.table -columns {metric target before after error} -show headings -height 2 -selectmode none -style AL.Treeview
     foreach {key title} {metric Metric target Target before Before after After error {Error (%)}} {
         $w.table heading $key -text $title
-        $w.table column $key -width 80 -minwidth 55 -stretch 1 -anchor e
+        set width [expr {max([font measure ALHeading $title],[font measure ALBody {−999.99 mS}])+24}]
+        $w.table column $key -width $width -minwidth $width -stretch 1 -anchor e
     }
     $w.table column metric -anchor w
-    pack $w.table -fill x
+    ttk::frame $w.tablearea; pack $w.tablearea -fill x
+    ttk::scrollbar $w.tablearea.scroll -orient horizontal -command [list $w.table xview]
+    $w.table configure -xscrollcommand [list $w.tablearea.scroll set]
+    pack $w.table -in $w.tablearea -fill x; raise $w.table $w.tablearea
+    pack $w.tablearea.scroll -fill x
     canvas $w.chart -height 165 -highlightthickness 0 -background [dict get $::analog_lens::colors field]
     pack $w.chart -fill x -pady 8
     bind $w.chart <Configure> [list ::analog_lens::draw_verification $w.chart]
@@ -380,14 +409,16 @@ proc ::analog_lens::build_verification_view {w} {
     pack $w.details.scroll -side right -fill y; pack $w.details.text -fill both -expand 1
 }
 proc ::analog_lens::verification_details {w} {
-    if {$::analog_lens::workspace_details} {pack $w.details -fill both -expand 1} else {pack forget $w.details}
-    render_verification_view $w
+    foreach view [list $::analog_lens::window.verification.page.canvas.content.view $::analog_lens::window.tabs.design.body.canvas.content.verify] {
+        if {[winfo exists $view.details]} {render_verification_view $view}
+    }
 }
 proc ::analog_lens::render_verification_view {w} {
     if {![winfo exists $w]} {return}
     set key [list $::analog_lens::verification_result $::analog_lens::verification_summary $::analog_lens::workspace_details $::analog_lens::run_log $::analog_lens::native_message]
     if {[get $::analog_lens::workspace_render_key $w] eq $key} {return}
     dict set ::analog_lens::workspace_render_key $w $key
+    if {$::analog_lens::workspace_details} {pack $w.details -fill both -expand 1} else {pack forget $w.details}
     $w.table delete [$w.table children {}]
     foreach row [get $::analog_lens::verification_result rows] {
         set metric [get $row metric]; set values [list [expr {$metric eq "gm" ? "gm" : "gm/Id"}]]
@@ -404,11 +435,14 @@ proc ::analog_lens::render_verification_view {w} {
 proc ::analog_lens::draw_verification {c} {
     if {![winfo exists $c]} {return}
     $c delete all
-    set fg [dict get $::analog_lens::colors fg]; set border [dict get $::analog_lens::colors border]
+    set fg [dict get $::analog_lens::colors field_fg]; set border [dict get $::analog_lens::colors border]
     set accent [lindex [dict get $::analog_lens::colors curves] 0]
     set rows [get $::analog_lens::verification_result rows]
-    if {![llength $rows]} {$c create text 16 40 -anchor nw -fill $fg -text {Apply and run to see measured targets here.} -width [expr {max(180,[winfo width $c]-32)}]; return}
-    set left 62; set right [expr {max(200,[winfo width $c]-22)}]; set y 40
+    if {![llength $rows]} {$c create text 16 40 -anchor nw -fill $fg -font ALBody -text {Apply and run to see measured targets here.} -width [expr {max(180,[winfo width $c]-32)}]; return}
+    set line [font metrics ALBody -linespace]
+    set gap [expr {max(77,3*$line+22)}]
+    $c configure -height [expr {2*$gap+12}]
+    set left [expr {[font measure ALBody gm/Id]+18}]; set right [expr {max(200,[winfo width $c]-22)}]; set y 30
     foreach row $rows {
         set target [get $row target]; set tolerance [get $::analog_lens::verification_result tolerance]
         set extent [expr {max(20.,$tolerance*1.5)}]
@@ -431,8 +465,9 @@ proc ::analog_lens::draw_verification {c} {
         $c create text $left [expr {$y+23}] -anchor w -fill $fg -text "−[format %.0f $extent]%"
         $c create text $center [expr {$y+23}] -fill $fg -text {Target 0%}
         $c create text $right [expr {$y+23}] -anchor e -fill $fg -text "+[format %.0f $extent]%"
-        incr y 77
+        incr y $gap
     }
+    foreach item [$c find all] {if {[$c type $item] eq "text"} {$c itemconfigure $item -font ALBody}}
 }
 proc ::analog_lens::setup_checks {} {
     set rows {}
@@ -462,34 +497,39 @@ proc ::analog_lens::setup_dialog {} {
     set ::analog_lens::setup_result [get $::analog_lens::integration_options result_path]
     set ::analog_lens::setup_analysis [get $::analog_lens::integration_options result_analysis]
     toplevel $w; wm title $w {Set up this project · Analog Lens}; wm geometry $w 780x630; wm minsize $w 620 520
-    ttk::frame $w.body -padding 16; pack $w.body -fill both -expand 1
-    pack [label $w.body.title {Check setup, then run your testbench} AL.Heading.TLabel] -anchor w
-    ttk::label $w.body.note -text {Optional setup · Select a check for guidance. No simulation or schematic edits happen until you choose an action.} -wraplength 700
-    pack $w.body.note -fill x -pady 8; wrapping $w.body.note
-    ttk::treeview $w.body.checks -columns {name state} -show headings -height 7
-    $w.body.checks heading name -text Check; $w.body.checks heading state -text Status
-    $w.body.checks column name -width 320; $w.body.checks column state -width 100
-    pack $w.body.checks -fill x; bind $w.body.checks <<TreeviewSelect>> ::analog_lens::setup_select
-    ttk::label $w.body.detail -textvariable ::analog_lens::setup_detail -wraplength 700
-    pack $w.body.detail -fill x -pady 10; wrapping $w.body.detail
-    ttk::button $w.body.fix -text {Select a check}; pack $w.body.fix -anchor w
-    ttk::label $w.body.pathlabel -text {Result file (blank: detect automatically)}; pack $w.body.pathlabel -anchor w -pady {12 4}
-    ttk::entry $w.body.path -textvariable ::analog_lens::setup_result; pack $w.body.path -fill x
-    ttk::combobox $w.body.analysis -textvariable ::analog_lens::setup_analysis -values {auto op dc tran} -state readonly -width 10
-    pack $w.body.analysis -anchor w -pady 8
-    ttk::label $w.body.status -textvariable ::analog_lens::setup_report -wraplength 700; pack $w.body.status -fill x; wrapping $w.body.status
-    ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
+    set b [dialog_page $w]
+    ttk::frame $b.body -padding 16; pack $b.body -fill both -expand 1
+    pack [label $b.body.title {Check setup, then run your testbench} AL.Heading.TLabel] -fill x
+    wrapping $b.body.title
+    ttk::label $b.body.note -text {Optional setup · Select a check for guidance. No simulation or schematic edits happen until you choose an action.} -wraplength 700
+    pack $b.body.note -fill x -pady 8; wrapping $b.body.note
+    ttk::treeview $b.body.checks -columns {name state} -show headings -height 7
+    $b.body.checks heading name -text Check; $b.body.checks heading state -text Status
+    $b.body.checks column name -width 320; $b.body.checks column state -width 100
+    pack $b.body.checks -fill x; bind $b.body.checks <<TreeviewSelect>> ::analog_lens::setup_select
+    ttk::label $b.body.detail -textvariable ::analog_lens::setup_detail -wraplength 700
+    pack $b.body.detail -fill x -pady 10; wrapping $b.body.detail
+    ttk::button $b.body.fix -text {Select a check}; pack $b.body.fix -anchor w
+    ttk::label $b.body.pathlabel -text {Result file (blank: detect automatically)}; pack $b.body.pathlabel -anchor w -pady {12 4}
+    ttk::entry $b.body.path -textvariable ::analog_lens::setup_result; pack $b.body.path -fill x
+    pack [label $b.body.analysislabel {Analysis to load}] -anchor w -pady {8 0}
+    ttk::combobox $b.body.analysis -textvariable ::analog_lens::setup_analysis -values {auto op dc tran} -state readonly -width 10
+    pack $b.body.analysis -anchor w -pady 8
+    ttk::label $b.body.status -textvariable ::analog_lens::setup_report -wraplength 700; pack $b.body.status -fill x; wrapping $b.body.status
+    ttk::frame $w.actions -padding 12; pack $w.actions -before $w.page -side bottom -fill x
     foreach {name title command} {recheck Recheck ::analog_lens::setup_refresh save {Save settings} ::analog_lens::setup_save run {Save & run testbench} ::analog_lens::setup_run} {
         ttk::button $w.actions.$name -text $title -command [list ::analog_lens::setup_action $command]; pack $w.actions.$name -side left -padx 4
     }
     ttk::button $w.actions.close -text Close -command [list destroy $w]; pack $w.actions.close -side right
-    bind $w <Escape> [list destroy $w]; setup_refresh
+    dialog_chrome $w $b.body.checks $w.actions.run
+    action_bar $w.actions {recheck save run close}
+    setup_refresh
 }
 proc ::analog_lens::setup_action {command} {
     if {[catch {uplevel #0 $command} why]} {set ::analog_lens::setup_report $why}
 }
 proc ::analog_lens::setup_refresh {} {
-    set w $::analog_lens::window.onboarding.body.checks
+    set w $::analog_lens::window.onboarding.page.canvas.content.body.checks
     set selected [$w selection]; $w delete [$w children {}]
     set ::analog_lens::setup_rows {}; set i 0; set needs 0
     foreach row [setup_checks] {
@@ -503,7 +543,7 @@ proc ::analog_lens::setup_refresh {} {
     setup_select
 }
 proc ::analog_lens::setup_select {} {
-    set w $::analog_lens::window.onboarding.body
+    set w $::analog_lens::window.onboarding.page.canvas.content.body
     set id [lindex [$w.checks selection] 0]; if {![dict exists $::analog_lens::setup_rows $id]} {return}
     set row [dict get $::analog_lens::setup_rows $id]; set ::analog_lens::setup_detail [get $row detail]
     set action [get $row action]
@@ -568,14 +608,17 @@ proc ::analog_lens::characterization_hint {key} {
     } $key]
 }
 proc ::analog_lens::normalized_characterization {} {
-    set result [dict create lengths [quantity_list $::analog_lens::char_edit(lengths) length]]
+    set root $::analog_lens::window.characterize.page.canvas.content.form.fields
+    if {[catch {quantity_list $::analog_lens::char_edit(lengths) length} lengths]} {field_error $root.lengths "Lengths: $lengths"}
+    set result [dict create lengths $lengths]
     foreach {key kind} {width length temp temperature vds voltage vsb voltage start voltage stop voltage step voltage} {
-        if {[catch {quantity $::analog_lens::char_edit($key) $kind} value]} {error "$key: $value"}
+        if {[catch {quantity $::analog_lens::char_edit($key) $kind} value]} {field_error $root.$key "$key: $value"}
         dict set result $key $value
     }
     return $result
 }
 proc ::analog_lens::characterization_action {command} {
-    if {[catch {uplevel #0 $command} why]} {set ::analog_lens::char_status $why} elseif {[lindex $command 0] eq "::analog_lens::use_device_conditions"} {set ::analog_lens::char_status $::analog_lens::workspace_conditions}
+    set ::analog_lens::char_error 0
+    if {[catch {uplevel #0 $command} why]} {set ::analog_lens::char_status $why; set ::analog_lens::char_error 1} elseif {[lindex $command 0] eq "::analog_lens::use_device_conditions"} {set ::analog_lens::char_status $::analog_lens::workspace_conditions}
     update_characterization_ui
 }

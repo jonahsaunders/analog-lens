@@ -108,11 +108,13 @@ proc ::analog_lens::show {} {
     }
     install_shortcuts
     bind $window <Configure> {::analog_lens::schedule_layout %W}
+    bind $root <Configure> [list ::analog_lens::schedule_layout $window]
     foreach var {target_length target_gmid target_gm_u} {
         trace add variable ::analog_lens::$var write ::analog_lens::invalidate_sizing
     }
     trace add variable ::analog_lens::run_log write ::analog_lens::update_log
     if {[catch {refresh} msg]} {set status $msg; render}
+    style_children $window
     update_run_controls
     restore_layout
     set timer [after 800 ::analog_lens::tick]

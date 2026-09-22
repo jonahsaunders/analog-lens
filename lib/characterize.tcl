@@ -2,6 +2,8 @@
 namespace eval ::analog_lens {
     variable char_channel {}; variable char_log {}; variable char_state idle; variable char_cancelled 0
     variable char_pid {}; variable char_identity {}; variable char_cancel_timer {}; variable char_output {}
+    variable char_help {Set the device geometry and sweep, then generate a lookup.}
+    variable char_error 0
     variable char_project {}; variable char_status {}; variable char_device {}; variable char_pdk {}; variable char_edit
     array set char_edit {lengths {0.5 1} width 10 corner tt temp 27 vds 0.9 vsb 0 start 0.1 stop 1.8 step 0.025}
 }
@@ -22,38 +24,44 @@ proc ::analog_lens::characterize_dialog {} {
         destroy $w
     }
     toplevel $w; wm title $w {Characterize installed PDK · Analog Lens}; wm transient $w $::analog_lens::window
-    wm geometry $w 740x770; wm minsize $w 620 700
+    wm geometry $w 780x740; wm minsize $w 580 440
     ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
     pack [button $w.actions.run {Generate lookup} {::analog_lens::characterization_action ::analog_lens::start_characterization}] -side left
     pack [button $w.actions.cancel {Cancel run} ::analog_lens::cancel_characterization] -side left -padx 8
     pack [button $w.actions.batch {PVT / bias batch…} ::analog_lens::batch_dialog] -side left
     pack [button $w.actions.close Close [list destroy $w]] -side right
-    ttk::label $w.status -textvariable ::analog_lens::char_status -wraplength 600 -padding 12; pack $w.status -side bottom -fill x
-    ttk::frame $w.form -padding 12; pack $w.form -fill x
-    pack [label $w.form.title "$pdk · $model" AL.Heading.TLabel] -anchor w -pady {0 8}
-    ttk::frame $w.form.fields; pack $w.form.fields -fill x
+    set b [dialog_page $w]
+    ttk::label $b.status -textvariable ::analog_lens::char_status -wraplength 600 -padding 12; pack $b.status -side bottom -fill x
+    ttk::frame $b.form -padding 12; pack $b.form -fill x
+    pack [label $b.form.title "$pdk · $model" AL.Heading.TLabel] -fill x -pady {0 8}
+    ttk::frame $b.form.fields; pack $b.form.fields -fill x
     set i 0
-    foreach {key title} {lengths {Lengths (µm, separated by spaces)} width {Total reference width (µm)} corner {Installed corner section} temp {Temperature (°C)} vds {Vds (V; negative for PMOS)} vsb {Vsb = Vs − Vb (V)} start {Starting |Vgs| (V)} stop {Ending |Vgs| (V)} step {|Vgs| step (V)}} {
-        ttk::label $w.form.fields.l$key -text $title
+    foreach {key title} {lengths {Lengths (µm)} width {Total reference width (µm)} corner {Installed corner section} temp {Temperature (°C)} vds {Vds (V)} vsb {Vsb = Vs − Vb (V)} start {Starting |Vgs| (V)} stop {Ending |Vgs| (V)} step {|Vgs| step (V)}} {
+        ttk::label $b.form.fields.l$key -text $title
         if {$key eq "corner"} {
-            ttk::combobox $w.form.fields.$key -textvariable ::analog_lens::char_edit($key) -values [characterization_corners] -width 24
-        } else {ttk::entry $w.form.fields.$key -textvariable ::analog_lens::char_edit($key) -width 24}
-        hint $w.form.fields.$key [characterization_hint $key]
-        grid $w.form.fields.l$key -row $i -column 0 -sticky w -padx {0 16} -pady 3
-        grid $w.form.fields.$key -row $i -column 1 -sticky ew -pady 3; incr i
+            ttk::combobox $b.form.fields.$key -textvariable ::analog_lens::char_edit($key) -values [characterization_corners] -width 24
+        } else {ttk::entry $b.form.fields.$key -textvariable ::analog_lens::char_edit($key) -width 24}
+        hint $b.form.fields.$key [characterization_hint $key] ::analog_lens::char_help
+        grid $b.form.fields.l$key -row $i -column 0 -sticky w -padx {0 16} -pady 3
+        grid $b.form.fields.$key -row $i -column 1 -sticky ew -pady 3; incr i
     }
-    grid columnconfigure $w.form.fields 1 -weight 1
-    ttk::button $w.form.conditions -text {Use this device's conditions} -command {::analog_lens::characterization_action ::analog_lens::use_device_conditions}
-    pack $w.form.conditions -anchor w -pady 4
-    ttk::label $w.form.help -textvariable ::analog_lens::field_help -wraplength 600 -style AL.Muted.TLabel
-    pack $w.form.help -fill x; wrapping $w.form.help
-    ttk::label $w.form.corners -textvariable ::analog_lens::corner_note -wraplength 600 -style AL.Muted.TLabel
-    pack $w.form.corners -fill x; wrapping $w.form.corners
-    ttk::label $w.form.note -text {Runs real ngspice DC sweeps with the installed vendor models, one finger and one copy. Existing circuit results stay loaded. Output is stored with this project. Close hides progress; Cancel stops characterization.} -wraplength 600 -style AL.Muted.TLabel
-    pack $w.form.note -fill x -pady {12 0}
-    text $w.log -height 7 -wrap word -state disabled; text_style $w.log 1
-    pack $w.log -fill both -expand 1 -padx 12
-    bind $w <Escape> [list destroy $w]
+    grid columnconfigure $b.form.fields 1 -weight 1
+    ttk::button $b.form.conditions -text {Use this device's conditions} -command {::analog_lens::characterization_action ::analog_lens::use_device_conditions}
+    pack $b.form.conditions -anchor w -pady 4
+    ttk::label $b.form.help -textvariable ::analog_lens::char_help -wraplength 600 -style AL.Muted.TLabel
+    pack $b.form.help -fill x; wrapping $b.form.help
+    ttk::label $b.form.corners -textvariable ::analog_lens::corner_note -wraplength 600 -style AL.Muted.TLabel
+    pack $b.form.corners -fill x; wrapping $b.form.corners
+    ttk::label $b.form.note -text {Runs real ngspice DC sweeps with the installed vendor models, one finger and one copy. Existing circuit results stay loaded. Output is stored with this project. Close hides progress; Cancel stops characterization.} -wraplength 600 -style AL.Muted.TLabel
+    pack $b.form.note -fill x -pady {12 0}
+    text $b.log -height 7 -wrap word -state disabled; text_style $b.log 1
+    pack $b.log -fill both -expand 1 -padx 12
+    wrapping $b.form.title; wrapping $b.form.note; wrapping $b.status
+    log_area $b
+    ttk::progressbar $b.progress -mode indeterminate
+    dialog_content [list $b.form $b.status $b.logarea]
+    dialog_chrome $w $b.form.fields.lengths $w.actions.run
+    action_bar $w.actions {run cancel batch close}
     update_characterization_ui
 }
 proc ::analog_lens::characterization_command {output} {
@@ -138,18 +146,26 @@ proc ::analog_lens::characterization_readable {} {
     update_characterization_ui
 }
 proc ::analog_lens::update_characterization_ui {} {
-    set w $::analog_lens::window.characterize
-    set b $::analog_lens::window.batch
-    if {[winfo exists $b]} {
-        set_enabled $b.actions.run [expr {$::analog_lens::char_channel eq {}}]
-        set_enabled $b.actions.cancel [expr {$::analog_lens::char_channel ne {} && !$::analog_lens::char_cancelled}]
-        $b.log configure -state normal; $b.log delete 1.0 end; $b.log insert end $::analog_lens::char_log; $b.log configure -state disabled; $b.log see end
-    }
-    if {![winfo exists $w]} {return}
     set idle [expr {$::analog_lens::char_channel eq {}}]
-    set_enabled $w.form.conditions $idle; set_enabled $w.actions.run $idle; set_enabled $w.actions.cancel [expr {!$idle && !$::analog_lens::char_cancelled}]
-    foreach key {lengths width corner temp vds vsb start stop step} {set_enabled $w.form.fields.$key $idle}
-    $w.log configure -state normal; $w.log delete 1.0 end; $w.log insert end $::analog_lens::char_log; $w.log configure -state disabled; $w.log see end
+    foreach dialog {characterize batch} {
+        set w $::analog_lens::window.$dialog
+        if {![winfo exists $w]} {continue}
+        set b $w.page.canvas.content
+        set_enabled $w.actions.run $idle
+        set_enabled $w.actions.cancel [expr {!$idle && !$::analog_lens::char_cancelled}]
+        set fields [expr {$dialog eq "batch" ? "corners temps vds vsb" : "lengths width corner temp vds vsb start stop step"}]
+        foreach key $fields {set_enabled $b.form.fields.$key $idle}
+        foreach name {save load batch} {set_enabled $w.actions.$name $idle}
+        set_enabled $b.form.conditions $idle
+        $w.actions.run configure -text [expr {$idle ? ($dialog eq "batch" ? "Run / resume batch" : "Generate lookup") : "Running…"}]
+        $b.status configure -style [expr {$::analog_lens::char_error || $::analog_lens::char_state eq "failed" ? "AL.Error.TLabel" : "AL.TLabel"}]
+        if {$idle} {$b.progress stop; pack forget $b.progress} else {
+            if {![winfo ismapped $b.progress]} {pack $b.progress -in $w.page.canvas.content -before $b.logarea -fill x -padx 12 -pady 6; $b.progress start}
+        }
+        set position [$b.log yview]; set follow [expr {[lindex $position 1] >= .99}]
+        $b.log configure -state normal; $b.log delete 1.0 end; $b.log insert end $::analog_lens::char_log; $b.log configure -state disabled
+        if {$follow} {$b.log see end} else {$b.log yview moveto [lindex $position 0]}
+    }
 }
 
 namespace eval ::analog_lens {
@@ -212,30 +228,37 @@ proc ::analog_lens::batch_dialog {} {
     set ::analog_lens::batch_edit(corners) $::analog_lens::char_edit(corner)
     set ::analog_lens::batch_edit(vds) $::analog_lens::char_edit(vds)
     toplevel $w; wm title $w {Characterization batch · Analog Lens}; wm geometry $w 720x580; wm minsize $w 560 460
-    ttk::frame $w.form -padding 12; pack $w.form -fill x
-    pack [label $w.form.title {PVT and bias grid} AL.Heading.TLabel] -anchor w
-    ttk::label $w.form.note -text {Enter space-separated values. Every combination uses the lengths, reference width and gate sweep in the Characterize window. Completed conditions are cached; repeat the request to resume after cancellation.} -wraplength 650
-    pack $w.form.note -fill x -pady 10
-    ttk::frame $w.form.fields; pack $w.form.fields -fill x
+    set b [dialog_page $w]
+    ttk::frame $b.form -padding 12; pack $b.form -fill x
+    pack [label $b.form.title {PVT and bias grid} AL.Heading.TLabel] -anchor w
+    ttk::label $b.form.note -text {Enter space-separated values. Every combination uses the lengths, reference width and gate sweep in the Characterize window. Completed conditions are cached; repeat the request to resume after cancellation.} -wraplength 650
+    pack $b.form.note -fill x -pady 10
+    ttk::frame $b.form.fields; pack $b.form.fields -fill x
     set row 0
     foreach {key title} {corners {Installed corner sections} temps {Temperatures (°C)} vds {Vds values (V; signed)} vsb {Vsb values (V)}} {
-        ttk::label $w.form.fields.l$key -text $title
+        ttk::label $b.form.fields.l$key -text $title
         if {$key eq "corners"} {
-            ttk::combobox $w.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -values [characterization_corners] -width 36
-        } else {ttk::entry $w.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -width 36}
-        grid $w.form.fields.l$key -row $row -column 0 -sticky w -padx {0 12} -pady 6
-        grid $w.form.fields.$key -row $row -column 1 -sticky ew; incr row
+            ttk::combobox $b.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -values [characterization_corners] -width 36
+        } else {ttk::entry $b.form.fields.$key -textvariable ::analog_lens::batch_edit($key) -width 36}
+        grid $b.form.fields.l$key -row $row -column 0 -sticky w -padx {0 12} -pady 6
+        grid $b.form.fields.$key -row $row -column 1 -sticky ew; incr row
     }
-    grid columnconfigure $w.form.fields 1 -weight 1
-    ttk::frame $w.actions -padding 12; pack $w.actions -side bottom -fill x
+    grid columnconfigure $b.form.fields 1 -weight 1
+    ttk::frame $w.actions -padding 12; pack $w.actions -before $w.page -side bottom -fill x
     foreach {name title command} {
         run {Run / resume batch} {::analog_lens::characterization_action {::analog_lens::start_characterization 1}}
         cancel Cancel ::analog_lens::cancel_characterization
         save {Save preset…} {::analog_lens::batch_preset save}
         load {Load preset…} {::analog_lens::batch_preset load}
     } {pack [button $w.actions.$name $title $command] -side left -padx 3}
-    ttk::label $w.status -textvariable ::analog_lens::char_status -wraplength 650 -padding 12; pack $w.status -side bottom -fill x
-    text $w.log -wrap word -state disabled; text_style $w.log 1; pack $w.log -fill both -expand 1 -padx 12
-    bind $w <Escape> [list destroy $w]
+    ttk::label $b.status -textvariable ::analog_lens::char_status -wraplength 650 -padding 12; pack $b.status -side bottom -fill x
+    text $b.log -wrap word -state disabled; text_style $b.log 1; pack $b.log -fill both -expand 1 -padx 12
+    pack [button $w.actions.close Close [list ::analog_lens::close_dialog $w]] -side right
+    wrapping $b.form.title; wrapping $b.form.note; wrapping $b.status
+    log_area $b
+    ttk::progressbar $b.progress -mode indeterminate
+    dialog_content [list $b.form $b.status $b.logarea]
+    dialog_chrome $w $b.form.fields.corners $w.actions.run
+    action_bar $w.actions {run cancel save load close}
     update_characterization_ui
 }

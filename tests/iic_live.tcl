@@ -207,7 +207,7 @@ if {[catch {
     wm geometry .analog_lens 1380x940+0+0
     capture_live .analog_lens sizing-workspace.png
     ::analog_lens::verification_dialog
-    require {[llength [.analog_lens.verification.chart find withtag tolerance]] == 2} {Verification tolerance bands were not drawn.}
+    require {[llength [.analog_lens.verification.page.canvas.content.view.chart find withtag tolerance]] == 2} {Verification tolerance bands were not drawn.}
     capture_live .analog_lens.verification sizing-verification.png
     ::analog_lens::results_dialog
     require {[llength [.analog_lens.results.tree children {}]] >= 3} {Project history did not retain runs and baselines.}

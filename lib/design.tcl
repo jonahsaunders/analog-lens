@@ -126,7 +126,8 @@ proc ::analog_lens::preview_size {{inline 0}} {
     ttk::scrollbar $w.scroll -command [list $w.text yview]; $w.text configure -yscrollcommand [list $w.scroll set]
     pack $w.scroll -side right -fill y; pack $w.text -fill both -expand 1
     $w.text insert end $sizing_preview_text; $w.text configure -state disabled
-    bind $w <Escape> [list destroy $w]
+    dialog_chrome $w $w.actions.cancel $w.actions.native
+    action_bar $w.actions {apply run native cancel}
 }
 proc ::analog_lens::apply_size_plan {{rerun 0}} {
     variable size_plan

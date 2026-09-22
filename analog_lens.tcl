@@ -2,7 +2,7 @@
 # Source this file from xschemrc (after the PDK configuration), or the console.
 if {[info exists ::analog_lens::loaded]} {return}
 namespace eval ::analog_lens {
-    variable version 0.6.0
+    variable version 0.6.1
     variable root [file dirname [file normalize [info script]]]
 }
 foreach module {core adapters lut xschem workflow session ui gui explorer integration provenance design verification characterize results usability} {
