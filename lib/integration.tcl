@@ -179,6 +179,8 @@ proc ::analog_lens::native_enter {command operation} {
                 set configured [file normalize $configured]
                 dict set before $configured [raw_signature $configured]
             }
+            set options {}; if {$configured ne {}} {set options [list --extra $configured]}
+            set before_stamps [project_helper raw-stamps $directory {*}$options]
             set cmd {}; catch {set cmd $::sim(spice,$::sim(spice,default),cmd)}
             if {[get $::analog_lens::integration_options device_saves] && [string match *ngspice* $cmd] && [file isfile $deck]} {
                 incr ::analog_lens::integration_internal
@@ -193,7 +195,7 @@ proc ::analog_lens::native_enter {command operation} {
             set dependencies {}
             if {[file isfile $deck]} {set dependencies [dependency_snapshot $deck]}
             set job [dict create context [context] project $::analog_lens::project_key directory $directory \
-                before $before preferred $configured default [file rootname $deck].raw \
+                before $before before_stamps $before_stamps preferred $configured default [file rootname $deck].raw \
                 analysis [get $::analog_lens::integration_options result_analysis] \
                 metadata [recorded_conditions [dict merge [capture_metadata] $dependencies [dict create design_stamp $stamp input_deck [file_signature $deck] source native-simulation]]]]
             set ::analog_lens::native_message {xschem simulation running… Results will be checked when it finishes.}
@@ -220,10 +222,13 @@ proc ::analog_lens::native_finished {id args} {
         set candidates [glob -nocomplain -directory [dict get $job directory] *.raw]
         set preferred [dict get $job preferred]
         if {$preferred ne {}} {set candidates [list $preferred]}
+        set options {}; if {$preferred ne {}} {set options [list --extra $preferred]}
+        set stamps [project_helper raw-stamps [dict get $job directory] {*}$options]
         set changed {}
         foreach path $candidates {
             if {![file isfile $path] || [file size $path] == 0} {continue}
-            if {[raw_signature $path] ne [get [dict get $job before] $path]} {lappend changed $path}
+            if {[raw_signature $path] ne [get [dict get $job before] $path] ||
+                [get $stamps $path] ne [get [get $job before_stamps] $path]} {lappend changed $path}
         }
         set default [dict get $job default]
         if {$preferred eq {} && $default in $changed} {set changed [list $default]}

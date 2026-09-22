@@ -56,6 +56,24 @@ def signature(path):
                 sha256=hashlib.sha256(path.read_bytes()).hexdigest())
 
 
+def raw_stamps(directory, extra=None):
+    """Detect identical raw rewrites within Tcl's one-second timestamp window."""
+    paths = set(directory.glob('*.raw'))
+    if extra:
+        paths.add(extra)
+    result = {}
+    for path in sorted(paths):
+        try:
+            stat = path.stat()
+        except FileNotFoundError:
+            continue
+        if path.is_file():
+            result[str(path)] = dict(size=stat.st_size, mtime_ns=stat.st_mtime_ns,
+                                     ctime_ns=stat.st_ctime_ns, inode=stat.st_ino,
+                                     device=stat.st_dev)
+    return result
+
+
 def resolve_path(name, directory):
     name = os.path.expandvars(name)
     if any(c in name for c in '{}$'):
@@ -274,13 +292,16 @@ def installed_corners(base, pdk):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('devices', 'snapshot', 'check', 'corners'))
+    parser.add_argument('action', choices=('devices', 'snapshot', 'check', 'corners', 'raw-stamps'))
     parser.add_argument('path', type=Path)
     parser.add_argument('--pdk', default=os.environ.get('PDK', ''))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--full', action='store_true')
+    parser.add_argument('--extra', type=Path)
     args = parser.parse_args()
-    if args.action == 'corners':
+    if args.action == 'raw-stamps':
+        result = raw_stamps(args.path, args.extra)
+    elif args.action == 'corners':
         result = installed_corners(args.path, args.pdk)
     elif args.action == 'check':
         result = check_manifest(json.loads(args.path.read_text()), args.full)

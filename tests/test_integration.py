@@ -132,6 +132,17 @@ class Integration(unittest.TestCase):
         self.assertEqual(self.c('set', '::callback_kept'), 'set ::my_callback 1')
         self.assertEqual(str(self.c('set', '::mock::raw_file')), str(raw))
         self.assertIn('Loaded', self.get('native_message'))
+        # An identical fast rerun still writes a new result. Tcl's second-level
+        # mtime and content checksum remain equal; nanosecond stamps must notice.
+        second = raw.stat().st_mtime_ns // 1_000_000_000 * 1_000_000_000
+        os.utime(raw, ns=(second + 100, second + 100))
+        previous_signature = str(self.call('raw_signature', str(raw)))
+        self.c('simulate')
+        raw.write_bytes(raw.read_bytes())
+        os.utime(raw, ns=(second + 200, second + 200))
+        self.assertEqual(str(self.call('raw_signature', str(raw))), previous_signature)
+        self.c('set', '::execute(exitcode,42)', 0); self.c('unset', '::execute(pipe,42)'); self.app.update()
+        self.assertIn('Loaded', self.get('native_message'))
         self.c('simulate'); self.c('set', '::execute(exitcode,42)', 0); self.c('unset', '::execute(pipe,42)'); self.app.update()
         self.assertIn('No unique new raw', self.get('native_message'))
 

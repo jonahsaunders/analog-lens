@@ -198,7 +198,12 @@ if {[catch {
     set sized_instance [lindex [regexp -all -inline -line {^XM1[^\n]*} $deck_text] 0]
     require {[regexp {(^|\s)(nf|ng)=2(\s|$)} $sized_instance]} "Finger count was not emitted by the installed symbol: $sized_instance"
     require {[regexp {(^|\s)(m|mult)=2(\s|$)} $sized_instance]} "Copy count was not emitted by the installed symbol: $sized_instance"
-    ::analog_lens::refresh_workspace
+    # Native raw loading may clear xschem selection. Select the device again
+    # before capturing the complete workspace and its next editable preview.
+    xschem unselect_all; xschem select instance M1
+    ::analog_lens::refresh
+    ::analog_lens::use_device_conditions
+    ::analog_lens::workspace_preview; ::analog_lens::refresh_workspace
     wm geometry .analog_lens 1380x940+0+0
     capture_live .analog_lens sizing-workspace.png
     ::analog_lens::verification_dialog
