@@ -86,7 +86,6 @@ proc ::analog_lens::page_region {canvas} {
     if {[winfo exists $canvas]} {$canvas configure -scrollregion [$canvas bbox all]}
 }
 proc ::analog_lens::workspace_focus {widget} {
-    if {[focus] ne $widget} {return}
     set c $::analog_lens::window.tabs.design.body.canvas
     if {![winfo exists $c] || ![string match ${c}.content.* $widget]} {return}
     set y [expr {[winfo rooty $widget]-[winfo rooty $c]+[$c canvasy 0]}]
@@ -195,7 +194,7 @@ proc ::analog_lens::build_design {w} {
     grid columnconfigure $b 0 -weight 1 -uniform workspace
     grid columnconfigure $b 1 -weight 1 -uniform workspace
     bind $b <Configure> +[list ::analog_lens::workspace_layout $b %w]
-    bind $::analog_lens::window <FocusIn> {+::analog_lens::workspace_focus %W}
+    bind $::analog_lens::window <FocusIn> {+if {[focus] eq {%W}} {::analog_lens::workspace_focus %W}}
     bind $::analog_lens::window <Button-4> {+::analog_lens::workspace_wheel %W -3}
     bind $::analog_lens::window <Button-5> {+::analog_lens::workspace_wheel %W 3}
     bind $::analog_lens::window <MouseWheel> {+::analog_lens::workspace_wheel %W [expr {-%D/120}]}
