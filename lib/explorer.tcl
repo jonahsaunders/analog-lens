@@ -75,6 +75,8 @@ proc ::analog_lens::fit_lookup_layout {} {
     variable window; variable sizing_visible
     set w $window.tabs.lut
     if {![winfo exists $w.charttools]} {return}
+    foreach name {load characterize metric sizing data} {pack forget $w.tools.$name}
+    flow_controls $w.tools {load characterize metric sizing data} [expr {max(360,[winfo width $w]-24)}]
     set needed 170
     foreach part {tools source filters charttools point note} {incr needed [winfo reqheight $w.$part]}
     if {$sizing_visible} {incr needed [winfo reqheight $w.size]}

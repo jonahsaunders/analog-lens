@@ -1,6 +1,6 @@
 # Native xschem integration. Host commands are observed, never replaced.
 namespace eval ::analog_lens {
-    variable integration_options [dict create follow_cursor 0 auto_results 1 device_saves 1 auto_lookup 1 result_path {} result_analysis op]
+    variable integration_options [dict create follow_cursor 0 auto_results 1 device_saves 1 auto_lookup 1 result_path {} result_analysis auto]
     variable integration_timer {}; variable integration_started 0; variable integration_internal 0
     variable project_key {}; variable project_directory {}; variable project_message {Open a saved testbench.}
     variable project_defaults {}; variable project_memory {}; variable project_saved {}; variable project_blocked {}
@@ -91,7 +91,7 @@ proc ::analog_lens::note_design_edit {args} {
 }
 proc ::analog_lens::watch_design_edits {} {
     set var ::tctx::[xschem get current_win_path]_netlist
-    if {![namespace exists ::tctx] || [dict exists $::analog_lens::edit_traces $var]} {return}
+    if {![namespace exists ::tctx] || [lsearch -exact [trace info variable $var] {write ::analog_lens::note_design_edit}] >= 0} {return}
     trace add variable $var write ::analog_lens::note_design_edit
     dict set ::analog_lens::edit_traces $var 1
 }
@@ -203,6 +203,7 @@ proc ::analog_lens::attach_native_result {} {
     incr ::analog_lens::integration_internal
     try {
         set path [dict get $job raw]; set type [dict get $job analysis]
+        if {$type eq "auto"} {set type [raw_plot_type $path]}
         read_results $path $type
         set ::analog_lens::sample 0; set ::analog_lens::dataset 0
         set metadata [dict merge [dict get $job metadata] [dict create raw [file_signature $path] analysis $type sample 0 dataset 0]]
@@ -211,6 +212,15 @@ proc ::analog_lens::attach_native_result {} {
         catch {atomic_write [file rootname $path].metadata $metadata}
         set ::analog_lens::native_message "Loaded [file tail $path] · $type"
     } on error {why options} {set ::analog_lens::native_message "Could not attach results: $why"} finally {incr ::analog_lens::integration_internal -1}
+}
+proc ::analog_lens::raw_plot_type {path} {
+    set f [open $path rb]
+    try {set header [read $f 4096]} finally {close $f}
+    if {![regexp -nocase {Plotname:[ \t]*([^\r\n]+)} $header -> plot]} {error {Raw file has no recognizable plot header.}}
+    if {[string match -nocase *operating* $plot]} {return op}
+    if {[string match -nocase *transient* $plot]} {return tran}
+    if {[string match -nocase *dc* $plot]} {return dc}
+    error "Unsupported first plot: $plot. Choose OP, DC or transient in Project settings."
 }
 proc ::analog_lens::run_testbench {} {
     if {$::analog_lens::run_channel ne {}} {error {Wait for the current operating-point run.}}
@@ -241,6 +251,10 @@ proc ::analog_lens::follow_cursor {} {
     set x [xschem get cursor2_x]; set dset $dataset
     set graph {}; catch {set graph [xschem get graph_lastsel]}
     if {[string is integer -strict $graph] && $graph >= 0} {
+        set sweep {}; catch {set sweep [xschem getprop rect 2 $graph sweep]}
+        if {$sweep ne {} && [lindex $sweep 0] ne [lindex [raw list] 0]} {
+            set cursor_message {Cursor not followed: this graph uses a custom sweep axis. Choose saved Sample and Dataset.}; return
+        }
         set local {}; catch {set local [xschem getprop rect 2 $graph cursor2_x]}
         if {[number $local] ne {}} {set x $local}
         set choice {}; catch {set choice [xschem getprop rect 2 $graph dataset]}
@@ -360,7 +374,7 @@ proc ::analog_lens::project_settings {} {
     pack [label $w.body.resultlabel {Result file (blank = detect; relative paths use netlist directory)}] -anchor w -pady {12 4}
     ttk::entry $w.body.result -textvariable ::analog_lens::integration_edit(result_path) -width 58; pack $w.body.result -fill x
     pack [label $w.body.analysislabel {Analysis to load}] -anchor w -pady {8 4}
-    ttk::combobox $w.body.analysis -textvariable ::analog_lens::integration_edit(result_analysis) -values {op dc tran} -state readonly; pack $w.body.analysis -anchor w
+    ttk::combobox $w.body.analysis -textvariable ::analog_lens::integration_edit(result_analysis) -values {auto op dc tran} -state readonly; pack $w.body.analysis -anchor w
     pack [label $w.body.note {The testbench must write a raw file. Control blocks stay intact. Sessions autosave in the project's .analog-lens folder; an invalid existing session is preserved.} AL.Muted.TLabel] -fill x -pady 12
     $w.body.note configure -wraplength 460
     pack [button $w.body.apply {Apply settings} [list ::analog_lens::apply_project_settings $w]] -anchor e

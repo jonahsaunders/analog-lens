@@ -2,19 +2,23 @@
 namespace eval ::analog_lens {
     variable char_channel {}; variable char_log {}; variable char_state idle; variable char_cancelled 0
     variable char_pid {}; variable char_identity {}; variable char_cancel_timer {}; variable char_output {}
-    variable char_project {}; variable char_status {}; variable char_device {}; variable char_edit
+    variable char_project {}; variable char_status {}; variable char_device {}; variable char_pdk {}; variable char_edit
     array set char_edit {lengths {0.5 1} width 10 corner tt temp 27 vds 0.9 vsb 0 start 0.1 stop 1.8 step 0.025}
 }
 proc ::analog_lens::characterize_dialog {} {
     set device [current_device]; if {$device eq {}} {error {Select one supported MOS in the schematic.}}
     set model [supported_model $device]
     set pdk [active_pdk]
+    if {$::analog_lens::char_channel ne {}} {
+        set device $::analog_lens::char_device; set model [supported_model $device]; set pdk $::analog_lens::char_pdk
+    }
     if {$pdk ni {sky130A gf180mcuD ihp-sg13g2 ihp-sg13cmos5l}} {error {Select an installed IIC PDK before characterizing.}}
     show
     set w $::analog_lens::window.characterize
     if {[winfo exists $w]} {raise $w; return}
     if {$::analog_lens::char_channel eq {}} {
         set ::analog_lens::char_device $device
+        set ::analog_lens::char_pdk $pdk
         set length [dimension_um [get $device length] [get $device family]]
         set ::analog_lens::char_edit(lengths) [list $length [expr {2*$length}]]
         set voltage [dict get {sky130A 1.8 gf180mcuD 3.3 ihp-sg13g2 1.2 ihp-sg13cmos5l 1.2} $pdk]
@@ -50,7 +54,8 @@ proc ::analog_lens::characterize_dialog {} {
 }
 proc ::analog_lens::characterization_command {output} {
     variable char_edit; variable char_device; variable root
-    set model [supported_model $char_device]; set pdk [active_pdk]
+    set model [supported_model $char_device]; set pdk $::analog_lens::char_pdk
+    if {$pdk ne [active_pdk]} {error {The active PDK changed. Close and reopen Characterize for the current model.}}
     if {$pdk ni {sky130A gf180mcuD ihp-sg13g2 ihp-sg13cmos5l}} {error {Choose an installed IIC PDK.}}
     set python [auto_execok python3]; if {$python eq {}} {error {Python 3 is missing from the IIC environment.}}
     set lengths [split [string trim $char_edit(lengths)]]; set clean {}

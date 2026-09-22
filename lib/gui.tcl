@@ -458,7 +458,6 @@ proc ::analog_lens::build_lut {w} {
     ttk::frame $w.tools -style AL.TFrame; pack $w.tools -fill x -pady {0 8}
     pack [button $w.tools.load {Load lookup CSV…} ::analog_lens::load_lut] -side left -padx {0 12}
     pack [button $w.tools.characterize {Characterize…} ::analog_lens::characterize_dialog] -side left -padx {0 10}
-    pack [label $w.tools.label Curve] -side left -padx {0 8}
     ttk::combobox $w.tools.metric -state readonly -values {{Intrinsic gain} {Estimated fT} {Current density}} \
         -textvariable ::analog_lens::lut_metric_label -width 17
     pack $w.tools.metric -side left -padx {0 12}

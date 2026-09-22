@@ -6,6 +6,13 @@ proc fail {message} {
 }
 proc require {condition message} {if {![uplevel 1 [list expr $condition]]} {fail $message}}
 proc bgerror {message} {fail "$message\n$::errorInfo"}
+proc capture_live {window name} {
+    raise $window; update
+    set command [list python3 [file join $::env(ANALOG_LENS_ROOT) tools capture_live.py] \
+        --output [file join $::env(ANALOG_LENS_OUTPUT) $name] \
+        [winfo rootx $window] [winfo rooty $window] [winfo width $window] [winfo height $window]]
+    if {[catch {exec {*}$command 2>@1} why]} {puts "Screenshot unavailable: $why"}
+}
 set no_ask_quit 1
 if {[catch {
     source [file join $::env(ANALOG_LENS_ROOT) analog_lens.tcl]
@@ -64,7 +71,7 @@ if {[catch {
     set sim(spice,0,cmd) {ngspice -b "$N"}
     set sim(spice,0,fg) 0
     set sim(spice,0,st) 0
-    dict set ::analog_lens::integration_options result_analysis op
+    dict set ::analog_lens::integration_options result_analysis auto
     xschem netlist
     set native_id [simulate {set ::native_callback_seen 1}]
     set deadline [expr {[clock milliseconds]+90000}]
@@ -82,6 +89,10 @@ if {[catch {
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) native.csv]
     ::analog_lens::update_freshness
     require {[string match {Current*} $::analog_lens::freshness]} "Native source state incorrect: $::analog_lens::freshness"
+    set host [xschem get topwindow]
+    wm geometry $host 1360x900+20+20; update; xschem zoom_full 0 0.8
+    ::analog_lens::refresh_sidebar
+    capture_live $host integrated-inspector.png
 
     # Apply a real characterized curve, verify the property edit and one-step Undo.
     set ::analog_lens::lut_file $::env(ANALOG_LENS_LOOKUP)
@@ -95,6 +106,7 @@ if {[catch {
     set ::analog_lens::target_gm_u [expr {2e6*[dict get $point gm_s]}]
     set before_props [xschem getprop instance M1]
     ::analog_lens::preview_size
+    capture_live .analog_lens.sizepreview sizing-preview.png
     set planned_width [dict get $::analog_lens::size_plan result width]
     require {abs($planned_width-20) < 1e-6} {Real lookup sizing did not scale width as expected.}
     ::analog_lens::apply_size_plan
@@ -128,6 +140,7 @@ if {[catch {
     }
     require {$::analog_lens::char_state eq "completed"} "$::analog_lens::char_status\n$::analog_lens::char_log"
     require {$::analog_lens::lut_file eq $::analog_lens::char_output} {Generated lookup was not loaded into the explorer.}
+    capture_live .analog_lens.characterize characterization.png
     ::analog_lens::project_flush
     set session [::analog_lens::project_session_path $::analog_lens::project_key $::analog_lens::project_directory]
     require {[file isfile $session]} {Project session was not autosaved.}

@@ -73,6 +73,26 @@ class Integration(unittest.TestCase):
         self.assertIn('800', self.c(panel+'.metrics', 'get', '1.0', 'end'))
         self.call('close_window'); self.assertTrue(self.c('winfo', 'exists', panel))
 
+    def test_unmapped_window_does_not_save_invalid_one_pixel_geometry(self):
+        self.call('close_window')
+        self.set('session_geometry', '')
+        self.call('show')
+        data = self.call('session_data')
+        self.call('validate_session', data)
+        self.assertNotEqual(str(self.c('dict', 'get', data, 'geometry')), '1x1')
+
+    def test_large_text_lookup_actions_wrap_without_clipping(self):
+        self.call('close_window')
+        for font in ('TkDefaultFont', 'TkTextFont', 'TkFixedFont'):
+            self.c('font', 'configure', font, '-size', 14)
+        self.call('show'); self.c('wm', 'geometry', '.analog_lens', '900x640')
+        self.c('.analog_lens.tabs', 'select', '.analog_lens.tabs.lut'); self.app.update()
+        self.call('fit_lookup_layout'); self.app.update()
+        for name in ('load', 'characterize', 'metric', 'sizing', 'data'):
+            w = '.analog_lens.tabs.lut.tools.'+name
+            self.assertGreaterEqual(int(self.c('winfo', 'width', w)), int(self.c('winfo', 'reqwidth', w))-2)
+            self.assertLessEqual(int(self.c('winfo', 'rootx', w))+int(self.c('winfo', 'width', w)), int(self.c('winfo', 'rootx', '.analog_lens'))+900)
+
     def test_project_switch_restores_targets_and_baselines_and_restart(self):
         self.c('dict', 'set', '::analog_lens::limits', 'gmid_min', 7)
         self.set('baseline_name', 'Project A'); self.call('keep_baseline'); self.call('project_flush')
@@ -107,7 +127,7 @@ class Integration(unittest.TestCase):
         self.c('trace', 'add', 'execution', 'simulate', 'enter', '::analog_lens::native_enter')
         self.c('trace', 'add', 'execution', 'simulate', 'leave', '::analog_lens::native_leave')
         self.c('simulate', 'set ::my_callback 1')
-        raw = self.directory/'a.raw'; raw.write_text('new raw fixture')
+        raw = self.directory/'a.raw'; raw.write_text('Title: fixture\nPlotname: Operating Point\nnew raw fixture')
         self.c('set', '::execute(exitcode,42)', 0); self.c('unset', '::execute(pipe,42)'); self.app.update()
         self.assertEqual(self.c('set', '::callback_kept'), 'set ::my_callback 1')
         self.assertEqual(str(self.c('set', '::mock::raw_file')), str(raw))

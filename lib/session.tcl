@@ -83,7 +83,7 @@ proc ::analog_lens::validate_session {data} {
         foreach key {follow_cursor auto_results device_saves auto_lookup} {
             if {[get $options $key] ni {0 1}} {error "Invalid integration setting: $key."}
         }
-        if {[get $options result_analysis] ni {op dc tran}} {error "Invalid project analysis type."}
+        if {[get $options result_analysis] ni {auto op dc tran}} {error "Invalid project analysis type."}
         dict get $options result_path
     }
     return $data
@@ -92,8 +92,11 @@ proc ::analog_lens::session_data {} {
     variable limits; variable declared; variable baselines; variable baseline_choice; variable lut_file; variable lut_slice
     variable session_path; variable window; variable session_geometry; variable session_sash; variable status
     if {[llength [info commands winfo]] && [winfo exists $window]} {
-        set session_geometry "[winfo width $window]x[winfo height $window]"
-        set session_sash [$window.tabs.op.panes sashpos 0]
+        # A newly constructed toplevel reports 1x1 until Tk has laid it out.
+        # Startup integration may run at idle before that Configure event.
+        set width [winfo width $window]; set height [winfo height $window]
+        if {$width >= 100 && $height >= 100} {set session_geometry "${width}x${height}"}
+        if {[winfo exists $window.tabs.op.panes] && $width >= 100} {set session_sash [$window.tabs.op.panes sashpos 0]}
     }
     set prefs {}
     foreach key {live only_review sizing_visible sort_key sort_desc lut_y lut_length target_gmid target_gm_u target_length} {
