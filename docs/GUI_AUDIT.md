@@ -1,6 +1,6 @@
 # GUI audit and upgrade
 
-Date: 2026-09-22 · Original audit: 0.2.0 · Current follow-up: 0.3.0
+Date: 2026-09-22 · Original audit: 0.2.0 · Current follow-up: 0.4.0
 
 ## Scope and interpretation
 
@@ -131,3 +131,9 @@ not treated as Tcl/Tk requirements.
 [progress]: https://developer.apple.com/design/human-interface-guidelines/progress-indicators
 [alerts]: https://developer.apple.com/design/human-interface-guidelines/alerts
 [charts]: https://developer.apple.com/design/human-interface-guidelines/charts
+
+## v0.4 integration review
+
+Added the embedded inspector, project settings dialog, characterization form/log, and geometry preview. The full analysis window remains available for larger plots and tables. Its lookup actions now wrap at reduced width, including with 14-point system fonts. Main inspector metrics scroll independently of the run/actions area.
+
+The 82-test local suite covers the new project/session lifecycle, corrupt autosave preservation, native simulation completion and callback retention, nearest-sample cursor tracking, source provenance, stale sizing-preview rejection, one-step Undo, measured-bias mismatch, real subprocess cancellation, and the startup-before-window-layout regression. Real IIC evidence and screenshots are recorded in [VALIDATION.md](../VALIDATION.md).

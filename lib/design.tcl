@@ -34,6 +34,13 @@ proc ::analog_lens::compatible_slices {device} {
         if {[dict exists $found $slice] || [lindex $slice 0] ne $pdk || [normalized_model [lindex $slice 1]] ne $model} {continue}
         lassign $slice lp lm corner temp vds vsb width
         if {[llength [condition_differences $conditions [dict create pdk $lp corner $corner temp_c $temp vds_v $vds vsb_v $vsb]]]} {continue}
+        set mismatch 0
+        foreach metric {vds vbs} bias [list $vds [expr {-$vsb}]] {
+            set measured [number [get [get $device values] $metric]]
+            # xschem's raw API has limited precision; allow 10 ppm or 1 µV.
+            if {$measured ne {} && abs($measured-$bias) > max(1e-6,abs($bias)*1e-5)} {set mismatch 1}
+        }
+        if {$mismatch} {continue}
         dict set found $slice 1
     }
     return [dict keys $found]
@@ -88,7 +95,7 @@ proc ::analog_lens::preview_size {} {
     set size_plan [make_size_plan]; set owner [get $size_plan owner]
     set sizing_preview_text "[get $size_plan model] · $owner\n\n"
     dict for {key value} [get $size_plan edits] {append sizing_preview_text "$key: [property $owner [list $key]] → $value\n"}
-    append sizing_preview_text "\nThis estimate uses one finger and one parallel copy. Total width is [format %.5g [get [get $size_plan result] width]] µm.\n\nParasitic formulas remain unchanged; fixed parasitic values need your review. Width scaling is an estimate. Run the circuit to verify.\n\nApply changes only the open schematic. xschem Undo restores all these properties in one step; saving remains your choice."
+    append sizing_preview_text "\nLookup: [join [get $size_plan slice] { · }]\nThis estimate uses one finger and one parallel copy. Total width is [format %.5g [get [get $size_plan result] width]] µm.\n\nParasitic formulas remain unchanged; fixed parasitic values need your review. Width scaling is an estimate. Run the circuit to verify.\n\nApply changes only the open schematic. xschem Undo restores all these properties in one step; saving remains your choice."
     set w $window.sizepreview
     if {[winfo exists $w]} {destroy $w}
     toplevel $w; wm title $w {Preview geometry changes · Analog Lens}; wm transient $w $window

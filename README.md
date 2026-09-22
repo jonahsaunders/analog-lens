@@ -2,11 +2,11 @@
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu and a resizable analysis window inside xschem's process. No browser, server, account, or Python service is required.
 
-Version **0.3.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
+Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
-This release adds named baselines and saved sessions, safe simulation cancellation, environment diagnostics, richer comparisons, lookup filters, chart inspection/zoom/SVG export, and recorded result conditions. The interface retains the usability principles from the [GUI audit](docs/GUI_AUDIT.md).
+This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
 
-**Validation:** 65 tests and the native Tk smoke test pass. [Real IIC-OSIC-TOOLS 2026.08 validation](https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544) passed eight NMOS/PMOS simulations and four xschem GUI workflows across SKY130A, GF180MCU-D, SG13G2, and SG13CMOS5L. See [VALIDATION.md](VALIDATION.md) and [PDK_SUPPORT.md](PDK_SUPPORT.md) for exact coverage. Screenshots use synthetic data.
+**Validation:** 82 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
 
 ## Interface preview
 
@@ -40,7 +40,7 @@ Extract this folder into your mounted designs directory. In the IIC terminal, ru
 python3 /foss/designs/xschem-analog-lens/install.py --rc /foss/designs/YOUR_PROJECT/xschemrc
 ```
 
-Replace `YOUR_PROJECT` with your existing project. The installer preserves the PDK setup, backs up `xschemrc`, and adds one source statement. Restart xschem and choose **Analog Lens → Open Analog Lens**.
+Replace `YOUR_PROJECT` with your existing project. The installer preserves the PDK setup, backs up `xschemrc`, and adds one source statement. Restart xschem; the inspector sidebar opens beside the schematic. Use **Analog Lens → Open analysis window** for the larger tables and charts.
 
 For a persistent installation in a mounted directory, add:
 
@@ -59,6 +59,16 @@ source /foss/designs/xschem-analog-lens/analog_lens.tcl
 
 Requirements: xschem with Tcl/Tk 8.6 or newer and the documented `xschem raw` API; ngspice on PATH; a working project PDK/model configuration. IHP requires the usual OSDI/PSP setup. The extension never edits installed PDK files. Load it **after** the PDK's xschemrc.
 
+## Integrated workflow
+
+1. Open a saved testbench. Its targets, baselines and lookup choices restore automatically.
+2. Select a transistor to inspect it in the sidebar.
+3. Use **Run testbench**, or xschem’s normal Netlist/Simulate controls. Your `.control` commands stay intact; the extension attaches new raw results when the run succeeds.
+4. Open **Project settings…** to choose a result file/plot or follow waveform cursor B.
+5. Use **Characterize…** for measured lookup curves and **Size selected…** to preview geometry changes, apply with Undo, and rerun for comparison.
+
+[Complete workflow, settings and limits](docs/INTEGRATION.md).
+
 ## Everyday workflow
 
 1. Open your top-level simulation testbench in xschem.
@@ -75,7 +85,7 @@ The device list is scoped to the currently open hierarchy level. To see transist
 
 Enter a name in **Compare runs**, then click **Keep baseline**. Each baseline retains its device results, hierarchy, and provenance; duplicate names receive a suffix. Choose an earlier baseline from the selector. Comparisons show matched, added, and removed devices, with gm/Id, gain, current, headroom, and estimated fT values and changes. **Export comparison…** includes stored numeric values and metadata, without the table's display rounding. Source precision is limited by xschem's raw-data reader and numeric API.
 
-Use **Session → Save session…** to save an `.alsession` file in your mounted designs directory. It stores named baselines, targets, lookup-file selection, sizing inputs, sorting, and window/pane size. **Open session…** restores it. Load or run current results separately. Lookup data is referenced by path; if that file has moved, load it again. Session files are parsed as data, never executed. Changes are saved explicitly; closing xschem does not autosave them.
+Use **Session → Save session…** to save an `.alsession` file in your mounted designs directory. It stores named baselines, targets, lookup-file selection, sizing inputs, sorting, and window/pane size. **Open session…** restores it. Load or run current results separately. Lookup data is referenced by path; if that file has moved, load it again. Session files are parsed as data, never executed. The active saved testbench also autosaves its working session under the project’s `.analog-lens/sessions/` folder. Explicit session files remain useful for sharing or moving work.
 
 **Setup & help → Result conditions** records optional corner, temperature, Vds, and Vsb values for comparisons and chart overlays. These are user-declared and do not change the simulator. Unknown conditions remain unverified; known mismatches are shown, and mismatched lookup overlays are hidden. A single declared bias describes the intended comparison condition, not every transistor's measured terminal voltage.
 
@@ -87,7 +97,7 @@ Elapsed time and the live run log remain available during simulation. **Session 
 
 ### Existing simulation flows
 
-You can use **Load results…** with `op`, `dc`, or `tran`. Set **Sample** and **Dataset** to select a saved point (zero-based). The extension does not interpolate between samples or follow waveform cursor B. Load a top-level raw file at the top level, then descend, so xschem's raw hierarchy mapping is correct.
+You can use **Load results…** with `op`, `dc`, or `tran`. Set **Sample** and **Dataset** to select a saved point (zero-based). Enable **Follow waveform cursor B** in Project settings to select the nearest saved DC/transient point automatically. The extension does not interpolate between samples. Load a top-level raw file at the top level, then descend, so xschem's raw hierarchy mapping is correct.
 
 **Operating point** intentionally replaces top-level `.control` blocks and top-level analyses in its disposable netlist. It retains models, includes, sources, and `.param` statements. If your bias/model setup relies on `alter`, `alterparam`, `pre_osdi`, `set`, or other commands inside `.control`, use your own simulation and **Load results**, or move that required setup into the normal model/environment setup. Included files with their own control blocks are not rewritten. Run logs and generated decks stay in xschem's simulation directory.
 
@@ -115,7 +125,7 @@ Required columns:
 
 The file in `examples/lookup-template.csv` is **illustrative synthetic data**, explicitly labeled `DEMO_ONLY`. It is a format example, not a characterized PDK or a valid sizing database. Replace it with your characterization data.
 
-Enable **Sizing estimate** to reveal the sizing form. In compact windows it replaces the chart area; hide it to return to the chart. **View data** remains available. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. Sizing does not automatically modify the schematic. There is no automatic PDK characterization in this version.
+Enable **Sizing estimate** to reveal the sizing form. In compact windows it replaces the chart area; hide it to return to the chart. **View data** remains available. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. **Preview schematic changes…** lists proposed edits before Apply; one xschem Undo restores them. The initial geometry profile uses one finger and one parallel copy. **Characterize…** generates real lookup data from supported installed PDK models. See the [integration guide](docs/INTEGRATION.md) for compatible conditions, model coverage and the sizing workflow.
 
 ### Import existing MAT lookup data
 

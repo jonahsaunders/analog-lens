@@ -276,11 +276,18 @@ proc ::analog_lens::current_device {} {
     set owners [xschem selected_set]
     if {[llength $owners] != 1} {return {}}
     set owner [lindex $owners 0]
+    set fresh {}
+    foreach r [scan] {if {[get $r owner] eq $owner} {set fresh $r; break}}
+    if {$fresh eq {}} {return {}}
     if {[context] eq $::analog_lens::active_context} {
-        foreach r $::analog_lens::records {if {[get $r owner] eq $owner} {return $r}}
+        foreach r $::analog_lens::records {
+            if {[get $r owner] ne $owner} {continue}
+            set same 1
+            foreach key {model width length fingers multiplier} {if {[get $r $key] ne [get $fresh $key]} {set same 0}}
+            if {$same} {return [dict merge $r $fresh]}
+        }
     }
-    foreach r [scan] {if {[get $r owner] eq $owner} {return $r}}
-    return {}
+    return $fresh
 }
 proc ::analog_lens::sidebar_action {command} {
     if {[catch {uplevel #0 $command} why]} {set ::analog_lens::native_message $why}

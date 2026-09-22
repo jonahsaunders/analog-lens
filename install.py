@@ -27,9 +27,9 @@ def install(source, destination, rc):
     block = f'{START}\nsource {tcl_literal(destination / "analog_lens.tcl")}\n{END}'
     pattern = re.compile(re.escape(START) + r'.*?' + re.escape(END), re.DOTALL)
     updated = pattern.sub(lambda _: block, text) if START in text else text.rstrip() + '\n\n' + block + '\n'
-    for folder in ('lib', 'symbols', 'tools', 'examples'):
+    for folder in ('lib', 'symbols', 'tools', 'examples', 'docs'):
         shutil.copytree(source / folder, destination / folder, dirs_exist_ok=True)
-    for name in ('analog_lens.tcl', 'README.md', 'LICENSE', 'PDK_SUPPORT.md'):
+    for name in ('analog_lens.tcl', 'README.md', 'LICENSE', 'PDK_SUPPORT.md', 'VALIDATION.md'):
         shutil.copy2(source / name, destination / name)
     backup = None
     if updated != text:
@@ -64,7 +64,7 @@ def main():
     print(f'Installed Analog Lens to {destination}')
     if backup:
         print(f'Original configuration backed up to {backup}')
-    print('Restart xschem, then choose Analog Lens → Open Analog Lens.')
+    print('Restart xschem to open the inspector sidebar. Use Analog Lens → Open analysis window for charts.')
     print('If a project has its own xschemrc, run this installer with --rc pointing to that file.')
 
 if __name__ == '__main__':

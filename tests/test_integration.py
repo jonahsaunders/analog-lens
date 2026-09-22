@@ -174,6 +174,11 @@ class Integration(unittest.TestCase):
         with self.assertRaises(tk.TclError): self.call('make_size_plan')
         self.c('set', '::env(PDK)', 'gf180mcuD')
         self.c('dict', 'set', '::hostfixture::props', 'model', 'custom_model')
+        with self.assertRaises(tk.TclError): self.call('make_size_plan')
+
+    def test_known_measured_bias_mismatch_cannot_be_applied(self):
+        self.load_compatible()
+        self.c('dict', 'set', '::mock::vectors', 'v(@m.xm1.m0[vds])', .8)
         self.call('refresh')
         with self.assertRaises(tk.TclError): self.call('make_size_plan')
 

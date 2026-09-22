@@ -179,7 +179,7 @@ def main():
                 model = instance.split()[5]
                 csv_path = directory/(polarity+'mos-lookup.csv')
                 command = [sys.executable, str(ROOT/'tools/characterize.py'), '--pdk', pdk, '--model', model,
-                           '--pdk-root', str(args.pdk_root), '--lengths', '0.5', '1.0', '--vds', str(vd if polarity=='n' else -vd),
+                           '--pdk-root', str(args.pdk_root), '--lengths', '0.5', '1.0', '--vds', str(.7 if polarity=='n' else -.7),
                            '--vgs-start', '0.2', '--vgs-step', '0.05', '--output', str(csv_path)]
                 code = run_logged(command, directory/(polarity+'mos-characterize.log'), timeout=300)
                 if code or not csv_path.is_file():
@@ -201,6 +201,10 @@ def main():
             record(pdk+'-xschem', 'failed', error=str(exc))
             log = directory/'xschem.log'
             if log.is_file(): print(log.read_text()[-10000:], flush=True)
+            # A failing GUI prerequisite can block every following PDK behind
+            # the same dialog. Retain this report and fail promptly for diagnosis.
+            print('Report:', report_path, flush=True)
+            return 1
     print('Report:', report_path)
     return 1 if any(check['status']=='failed' for check in report['checks']) else 0
 

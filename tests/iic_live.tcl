@@ -1,4 +1,7 @@
 # Actual xschem/PDK integration. Invoked by tools/validate_iic.py, never by mocks.
+fconfigure stdout -buffering line
+set live_stage startup
+proc stage {name} {set ::live_stage $name; puts "LIVE STAGE: $name"}
 proc fail {message} {
     puts stderr "LIVE CHECK FAILED: $message"
     if {[info exists ::analog_lens::run_log]} {puts stderr $::analog_lens::run_log}
@@ -14,13 +17,16 @@ proc capture_live {window name} {
     if {[catch {exec {*}$command 2>@1} why]} {puts "Screenshot unavailable: $why"}
 }
 set no_ask_quit 1
+after 120000 {fail "Timed out during $::live_stage"}
 if {[catch {
+    stage startup
     source [file join $::env(ANALOG_LENS_ROOT) analog_lens.tcl]
     set ::netlist_dir $::env(ANALOG_LENS_OUTPUT)
     ::analog_lens::show
     update
     set devices [::analog_lens::collect_devices]
     require {[llength $devices] == 2} {Expected a top-level MOS and a MOS inside x1.}
+    stage isolated-op
     ::analog_lens::run_op
     set deadline [expr {[clock milliseconds]+90000}]
     while {$::analog_lens::run_channel ne {}} {
@@ -32,6 +38,7 @@ if {[catch {
     set values [dict get [lindex $::analog_lens::records 0] values]
     require {[dict get $values gm] > 0 && [dict get $values gmid] > 0} {Missing top-level MOS parameters.}
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) top.csv]
+    stage hierarchy-and-annotation
     .analog_lens.tabs.op.panes.list.tree selection set d0
     ::analog_lens::inspect_selection
     ::analog_lens::locate
@@ -59,6 +66,7 @@ if {[catch {
     require {[xschem get instances] == $before+1} {Annotation placement did not add one object.}
     require {[string first {gm/Id} [::analog_lens::annotation M1]] >= 0} {Annotation has no device metrics.}
     # Embedded sidebar shares xschem's toplevel and follows its selection.
+    stage sidebar
     xschem unselect_all; xschem select instance M1
     ::analog_lens::show_sidebar; update
     set panel $::analog_lens::sidebar
@@ -67,6 +75,7 @@ if {[catch {
     ::analog_lens::hide_sidebar; ::analog_lens::show_sidebar; update
 
     # Use native simulation and retain the caller callback and .control alterations.
+    stage native-simulation
     set sim(spice,default) 0
     set sim(spice,0,cmd) {ngspice -b "$N"}
     set sim(spice,0,fg) 0
@@ -95,6 +104,7 @@ if {[catch {
     capture_live $host integrated-inspector.png
 
     # Apply a real characterized curve, verify the property edit and one-step Undo.
+    stage sizing-and-undo
     set ::analog_lens::lut_file $::env(ANALOG_LENS_LOOKUP)
     set ::analog_lens::lut_rows [::analog_lens::parse_lut [::analog_lens::read_text $::analog_lens::lut_file]]
     set ::analog_lens::lut_slice [dict get [lindex $::analog_lens::lut_rows 0] slice]
@@ -119,6 +129,7 @@ if {[catch {
     require {[xschem getprop instance M1] eq $before_props} {One xschem Undo did not restore all geometry properties.}
 
     # Global waveform cursor B follows the nearest saved point in an actual DC raw.
+    stage cursor
     ::analog_lens::read_results $::env(ANALOG_LENS_SWEEP) dc
     set ::analog_lens::sample 0; set ::analog_lens::dataset 0
     dict set ::analog_lens::integration_options follow_cursor 1
@@ -130,6 +141,7 @@ if {[catch {
     require {[dict get [dict get [lindex $::analog_lens::records 0] values] gm] > 0} {Cursor-following lost gm data.}
 
     # Drive the actual asynchronous characterization GUI once per PDK.
+    stage characterization
     ::analog_lens::characterize_dialog
     array set ::analog_lens::char_edit {lengths 0.5 width 10 temp 27 vds 0.7 vsb 0 start 0.4 stop 1.0 step 0.1}
     ::analog_lens::start_characterization
@@ -142,6 +154,7 @@ if {[catch {
     require {$::analog_lens::lut_file eq $::analog_lens::char_output} {Generated lookup was not loaded into the explorer.}
     capture_live .analog_lens.characterize characterization.png
     ::analog_lens::project_flush
+    stage project-persistence
     set session [::analog_lens::project_session_path $::analog_lens::project_key $::analog_lens::project_directory]
     require {[file isfile $session]} {Project session was not autosaved.}
     set restore_target $::analog_lens::target_gm_u
