@@ -17,7 +17,7 @@ Support means the MOS adapter and GUI workflow are implemented. **It does not me
 
 ## Validated in IIC-OSIC-TOOLS 2026.08
 
-The [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) exercised installed vendor models and symbols:
+The [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167) exercised installed vendor models and symbols:
 
 | PDK | NMOS / PMOS model pair | Tested behavior |
 |---|---|---|
@@ -26,7 +26,7 @@ The [passing integration run](https://github.com/jonahsaunders/analog-lens/actio
 | IHP SG13G2 | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
 | IHP SG13CMOS5L | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
 
-All eight simulator checks and four live xschem integrations passed. GUI checks included results loading, hierarchy, cross-probing, highlighting, annotation placement, the embedded sidebar, native simulations, source freshness, cursor tracking, sizing Apply/Undo, real characterization and automatic lookup loading, project restoration, and twelve exported reports compared with raw data. The container also passed all 85 automated tests without skips. See [VALIDATION.md](VALIDATION.md) for the image digest, numerical tolerances, source commit, and retained evidence.
+All 24 direct simulations and four live xschem integrations passed. The direct checks cover NMOS/PMOS metrics and two-finger devices with one/two copies. GUI checks include hierarchy, cross-probing, highlighting, annotation placement, sidebar, native simulations, freshness, cursor tracking, sizing Apply/Undo and measured target verification, archived results, characterization, 27/85 °C batches with cache reuse, and project restoration. Sixteen exported reports were compared with raw data, including post-sizing measurements. The container also passed all 104 automated tests without skips. See [VALIDATION.md](VALIDATION.md) for the image digest, numerical tolerances, source commit, and retained evidence.
 
 Fixture and native tests additionally cover numerical guards, adapter naming, ambiguous wrappers, CSV/LUT validation, sizing math, hierarchy recovery, installer preservation, keyboard/layout behavior, comparisons, sessions, provenance, and Linux cancellation. These checks complement the real PDK simulations.
 
@@ -34,7 +34,7 @@ Geometry changes and characterization use the model pairs above. Sizing previews
 
 ## Coverage boundaries
 
-The real tests use nominal MOS corners and the model pairs above. Other voltage options, corners, temperatures, device geometries, BJT/RF/composite families, and other container/PDK revisions need validation before relying on them. Bipolar support currently has adapter/fixture coverage, not the real-device qualification above. PMOS metrics are tested in ngspice; the automated xschem placement/hierarchy testbench uses NMOS.
+The real tests use nominal MOS corners and the model pairs above. Batch checks additionally cover 27/85 °C at Vds 0.7 V and Vsb 0 V. Other voltage options, corners, temperatures, bias combinations, device geometries, BJT/RF/composite families, and other container/PDK revisions need validation before relying on them. Bipolar support currently has adapter/fixture coverage, not the real-device qualification above. PMOS metrics are tested in ngspice; the automated xschem placement/hierarchy testbench uses NMOS.
 
 Check your own design in the IIC VNC/X11 desktop and compare its particular model variants against ngspice output and the PDK's annotations. Automated GUI checks cannot establish usability for every project, theme, or screen setup.
 
@@ -51,7 +51,7 @@ Check your own design in the IIC VNC/X11 desktop and compare its particular mode
 
 No foundry models, PDK files, proprietary data, or third-party lookup tables are distributed with this extension.
 
-## Automated IIC validation (v0.4)
+## Automated IIC validation (v0.5)
 
 Run `xvfb-run -a python3 tools/validate_iic.py --require-all` inside IIC-OSIC-TOOLS, or `bash tools/run_iic_container.sh` from a Docker host. The harness uses installed vendor symbols/models, checks NMOS and PMOS metrics, and exercises actual xschem hierarchy, highlighting, cross-probing and annotation workflows. It saves logs and raw results and fails if any required PDK is absent or fails.
 

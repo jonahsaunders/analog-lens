@@ -9,6 +9,9 @@ change to the extension's normal interface.
 | `iic-inspector.png` | Passing IIC 2026.08 run, IHP SG13G2 NMOS | Embedded sidebar with real simulator measurements and source-state indicator |
 | `iic-sizing-preview.png` | Same run, SKY130 NMOS measured lookup | Width 10 → 20 µm preview; one finger/copy, Apply and Undo workflow |
 | `iic-characterization.png` | Same run, SKY130 NMOS | Completed seven-sample real ngspice sweep, automatically loaded into the explorer |
+| `iic-sizing-verification.png` | v0.5 passing IIC 2026.08 run, SKY130 NMOS | Actual rerun measurements, before/after changes and signed target errors; a reported Miss is an honest target verdict |
+| `iic-project-results.png` | Same v0.5 run, SKY130 NMOS | Archived native/OP runs and named sizing baselines |
+| `iic-characterization-batch.png` | Same v0.5 run, SKY130 NMOS | Completed 27/85 °C batch, with both conditions reused from verified cache |
 | `operating-point.png` | `tests/mock_xschem.tcl` | M1 selected, with M2 marked for review and missing parameters shown as `—` |
 | `gmid-explorer.png` | `examples/lookup-template.csv` | Intrinsic gain for two channel lengths, with the synthetic 0.3 µm / 16 V⁻¹ / 800 µS sizing example |
 | `compare-runs.png` | `tests/mock_xschem.tcl`, then a synthetic change to M1 gm | Baseline and current metrics, including a +25% gm/Id change |
@@ -16,7 +19,9 @@ change to the extension's normal interface.
 | `lookup-data.png` | `examples/lookup-template.csv` | Numeric snapshot of the plotted synthetic lookup values |
 | `run-log.png` | Explicitly labeled synthetic explanatory text | Log reading, tail following, copying, and closing |
 
-The real captures come from [passing run 35738760853](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853), code `e01f9d7f18acf3fdf7f6948c65f066066d0009b0`, artifact `10698881729`. `tests/iic_live.tcl` and `tools/capture_live.py` create them while testing actual xschem. Run `bash tools/run_iic_container.sh` to reproduce the real workflow. The validation artifact contains source decks, simulator raw data and characterization provenance.
+The original inspector, sizing-preview and single-characterization captures come from [passing run 35738760853](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853), code `e01f9d7f18acf3fdf7f6948c65f066066d0009b0`, artifact `10698881729`. `tests/iic_live.tcl` and `tools/capture_live.py` create them while testing actual xschem. Run `bash tools/run_iic_container.sh` to reproduce the real workflow. The validation artifact contains source decks, simulator raw data and characterization provenance.
+
+The three new v0.5 captures come from [passing run 35756609167](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167), code `09c9cec27dd97a263b7e0ae2ede7118de88bad61`, artifact `10707733195`. The artifact identifier and measured verification values are retained in the [v0.5 validation summary](../validation/iic-2026.08-v0.5.json). These are direct window captures without altered measurements.
 
 ## Regenerate synthetic previews
 

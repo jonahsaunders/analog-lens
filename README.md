@@ -6,15 +6,19 @@ A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector s
 
 Version **0.5.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
-This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
+The **inspector sidebar** connects normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. The new [v0.5 workflow guide](docs/INTEGRATION_V05.md) covers measured verification, project history and characterization batches.
 
-**v0.4 validation baseline:** 85 tests, the native Tk smoke test, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) covers all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+**Validated in IIC 2026.08:** 104 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167) includes measured sizing verification, archived results and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
 
 ## Interface preview
 
 ![Analog Lens embedded in xschem, inspecting measured IHP SG13G2 transistor results in IIC-OSIC-TOOLS.](docs/images/iic-inspector.png)
 
 **Integrated inspector.** Actual xschem and ngspice results from the passing IIC run, using the installed IHP SG13G2 model. [Sizing preview](docs/images/iic-sizing-preview.png) and [completed real characterization](docs/images/iic-characterization.png) show the remaining integration dialogs.
+
+![Measured sizing verification reporting target errors after a real SKY130 simulation.](docs/images/iic-sizing-verification.png)
+
+**Measured sizing verification.** A real target miss is reported with before/after values and signed errors. [Project results](docs/images/iic-project-results.png) retains runs and named baselines; [characterization batches](docs/images/iic-characterization-batch.png) reuse completed, verified conditions.
 
 ![Analog Lens operating-point inspector showing M1 and M2, their gm/Id and intrinsic gain, and the selected device's detailed metrics.](docs/images/operating-point.png)
 
@@ -72,20 +76,21 @@ Requirements: xschem with Tcl/Tk 8.6 or newer and the documented `xschem raw` AP
 3. Use **Run testbench**, or xschem’s normal Netlist/Simulate controls. Your `.control` commands stay intact; the extension attaches new raw results when the run succeeds.
 4. Open **Project settings…** to choose a result file/plot or follow waveform cursor B.
 5. Use **Characterize…** for measured lookup curves and **Size selected…** to preview geometry changes, apply with Undo, and rerun for comparison.
+6. Check **Sizing verification** for measured target errors. Use **Project results** to reopen archived runs, compare named baselines, or start a reusable PVT/bias batch.
 
-[Complete workflow, settings and limits](docs/INTEGRATION.md).
+[Complete workflow, settings and limits](docs/INTEGRATION_V05.md).
 
 ## Everyday workflow
 
 1. Open your top-level simulation testbench in xschem.
-2. Click **Run operating point**. The extension traverses schematic hierarchy, generates parameter saves, netlists to a new file, and runs ngspice asynchronously. It preserves source schematics and existing simulation blocks.
+2. Click **Run operating point**. The extension discovers devices from a generated netlist without navigating the editor, generates parameter saves, and runs ngspice asynchronously. It preserves source schematics and existing simulation blocks.
 3. Descend into the circuit. The table follows the current hierarchy. Select a transistor in xschem or the table to see its operating point and derived metrics.
 4. Use **Locate in schematic** for cross-probing, or **Color by gm/Id** to highlight devices below, within, or above your targets using xschem palette layers 8, 4, and 6. This adds highlights; use xschem's Highlight menu to clear them. **Place annotation** places an optional annotation symbol; click in the schematic to position it. This is the only analysis action that intentionally adds a schematic object.
 5. **Keep baseline**, edit the circuit, rerun, and inspect **Compare runs**. Export CSV to retain a report.
 
 The inspector displays Id/Ic, gm, gds/go, gm/Id, intrinsic gain, ro, Vgs, Vds, model Vth/Vdsat, model headroom, Cgg, and estimated fT when the required vectors exist. Missing results are `—`; they are never silently replaced with zero. Width, length, finger count, and multiplier are shown as entered, without guessing units or double-counting multiplicity.
 
-The device list is scoped to the currently open hierarchy level. To see transistors in a subcircuit, descend into that subcircuit. The OP run itself gathers saves recursively from schematic-backed subcircuits. Arbitrary external SPICE subcircuits, encrypted models, unsupported primitive wrappers, and multi-device composite models may require an adapter or a separately generated raw file.
+The device list is scoped to the currently open hierarchy level. To see transistors in a subcircuit, descend into that subcircuit. The OP run gathers saves from generated and included SPICE subcircuit definitions without changing the displayed sheet. Recursive, unresolved or conditional design topology is rejected explicitly. Encrypted models, unsupported primitive wrappers and multi-device composite models may require an adapter or a separately generated raw file.
 
 ### Save work and compare runs
 
@@ -93,7 +98,7 @@ Enter a name in **Compare runs**, then click **Keep baseline**. Each baseline re
 
 Use **Session → Save session…** to save an `.alsession` file in your mounted designs directory. It stores named baselines, targets, lookup-file selection, sizing inputs, sorting, and window/pane size. **Open session…** restores it. Load or run current results separately. Lookup data is referenced by path; if that file has moved, load it again. Session files are parsed as data, never executed. The active saved testbench also autosaves its working session under the project’s `.analog-lens/sessions/` folder. Explicit session files remain useful for sharing or moving work.
 
-**Setup & help → Result conditions** records optional corner, temperature, Vds, and Vsb values for comparisons and chart overlays. These are user-declared and do not change the simulator. Unknown conditions remain unverified; known mismatches are shown, and mismatched lookup overlays are hidden. A single declared bias describes the intended comparison condition, not every transistor's measured terminal voltage.
+**Setup & help → Result conditions** records optional corner, temperature, Vds, and Vsb values for comparisons and chart overlays. These are user-declared and do not change the simulator. Observed deck conditions take precedence when unambiguous; device bias checks use measured external terminals. Unknown conditions remain unverified, dependency gaps are marked partial, and mismatched lookup overlays are hidden. A single declared bias describes the intended comparison condition, not every transistor's measured terminal voltage.
 
 ### Run control and setup checks
 

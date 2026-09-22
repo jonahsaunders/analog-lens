@@ -26,6 +26,8 @@ circuit-level specifications separately. The automatic sizing rerun starts at
 the top-level testbench; nested edits can be applied locally and use xschem's
 normal save/return workflow. One xschem Undo restores the complete geometry edit.
 
+![Real sizing verification with measured target errors.](images/iic-sizing-verification.png)
+
 ## Geometry conventions
 
 | Family | Dimensions | Finger property | Copy property | Minimum L / finger W (µm) |
@@ -85,6 +87,8 @@ shared within the project directory. Write errors leave loaded results usable
 and report that history could not be saved. Run archives can be large; no
 automatic deletion policy removes engineering evidence.
 
+![Project runs and named baselines retained in the results browser.](images/iic-project-results.png)
+
 ## Reusable characterization batches
 
 Open **PVT / bias batch** from Characterize or **Characterization batch** from
@@ -98,6 +102,8 @@ them; cache identity includes conditions, model fingerprints, simulator version
 and generator source. Modified/incomplete CSVs and unresolved dependency graphs
 are not reused. The combined CSV is published only after all conditions succeed.
 JSON batch manifests retain job requests, cache identities and completion state.
+
+![Completed two-temperature batch using verified cached samples.](images/iic-characterization-batch.png)
 
 CLI example (inside IIC):
 
