@@ -233,7 +233,13 @@ proc ::analog_lens::refresh_workspace {} {
         set ::analog_lens::workspace_key $key
         set ::analog_lens::workspace_choices {}; set ::analog_lens::workspace_choice {}
         set ::analog_lens::workspace_conditions {Use this device's conditions to copy known values. Unknown fields stay blank.}
-        set ::analog_lens::workspace_message {}; set ::analog_lens::size_plan {}; set ::analog_lens::sizing_preview_text {}
+        set ::analog_lens::workspace_message {}
+        # A preview may have been opened before the next selection poll. Keep
+        # that valid plan; only a genuinely different device/context clears it.
+        set plan $::analog_lens::size_plan
+        if {[get $plan context] ne [context] || [get $plan owner] ne [get $r owner] || [get $plan model] ne [get $r model]} {
+            set ::analog_lens::size_plan {}; set ::analog_lens::sizing_preview_text {}
+        }
     }
     set ::analog_lens::workspace_device [expr {$r eq {} ? "Size & verify · Select a transistor" : "[get $r owner] · [get $r model] · [active_pdk]"}]
     set v [get $r values]

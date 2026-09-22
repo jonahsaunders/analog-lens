@@ -461,3 +461,14 @@ class Integration(unittest.TestCase):
         self.call('use_device_conditions')
         self.assertAlmostEqual(float(self.get('char_edit(vds)')),.9)
         self.assertEqual(int(self.c('dict','size',self.get('workspace_choices'))),1)
+
+    def test_selection_poll_keeps_new_preview_for_current_device(self):
+        self.load_compatible()
+        self.set('workspace_key','previous selection before next poll')
+        self.call('workspace_preview')
+        plan=self.get('size_plan')
+        self.call('refresh_workspace')
+        self.assertEqual(self.get('size_plan'),plan)
+        self.c('set','::mock::selection','M2')
+        self.call('refresh_workspace')
+        self.assertEqual(int(self.c('dict','size',self.get('size_plan'))),0)
