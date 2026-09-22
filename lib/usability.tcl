@@ -86,6 +86,7 @@ proc ::analog_lens::page_region {canvas} {
     if {[winfo exists $canvas]} {$canvas configure -scrollregion [$canvas bbox all]}
 }
 proc ::analog_lens::workspace_focus {widget} {
+    if {[focus] ne $widget} {return}
     set c $::analog_lens::window.tabs.design.body.canvas
     if {![winfo exists $c] || ![string match ${c}.content.* $widget]} {return}
     set y [expr {[winfo rooty $widget]-[winfo rooty $c]+[$c canvasy 0]}]

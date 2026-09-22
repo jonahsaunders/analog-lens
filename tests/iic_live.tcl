@@ -42,7 +42,7 @@ if {[catch {
     require {[dict get $values gm] > 0 && [dict get $values gmid] > 0} {Missing top-level MOS parameters.}
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) top.csv]
     stage hierarchy-and-annotation
-    .analog_lens.tabs.op.panes.list.tree selection set d0
+    .analog_lens.tabs.op.canvas.content.panes.list.tree selection set d0
     ::analog_lens::inspect_selection
     ::analog_lens::locate
     require {[lsearch -exact [xschem selected_set] M1] >= 0} {Cross-probing did not select M1.}
@@ -57,7 +57,7 @@ if {[catch {
     require {[dict get $child gm] > 0} {Hierarchy mapping lost the child gm vector.}
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) child.csv]
     xschem go_back 2; ::analog_lens::refresh
-    .analog_lens.tabs.op.panes.list.tree selection set d0
+    .analog_lens.tabs.op.canvas.content.panes.list.tree selection set d0
     ::analog_lens::inspect_selection
     set before [xschem get instances]
     ::analog_lens::place_annotation

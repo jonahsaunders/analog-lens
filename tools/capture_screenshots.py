@@ -66,7 +66,7 @@ def main():
             image.save(args.output_dir / filename, optimize=True)
             print(f"Saved {args.output_dir / filename} ({w}×{h})")
 
-        tree = WINDOW + ".tabs.op.panes.list.tree"
+        tree = WINDOW + ".tabs.op.canvas.content.panes.list.tree"
         call(tree, "selection", "set", "d0")
         call("::analog_lens::inspect_selection")
         capture("operating-point.png")

@@ -89,7 +89,7 @@ class Integration(unittest.TestCase):
         self.c('.analog_lens.tabs', 'select', '.analog_lens.tabs.lut'); self.app.update()
         self.call('fit_lookup_layout'); self.app.update()
         for name in ('load', 'characterize', 'metric', 'sizing', 'data'):
-            w = '.analog_lens.tabs.lut.tools.'+name
+            w = '.analog_lens.tabs.lut.canvas.content.tools.'+name
             self.assertGreaterEqual(int(self.c('winfo', 'width', w)), int(self.c('winfo', 'reqwidth', w))-2)
             self.assertLessEqual(int(self.c('winfo', 'rootx', w))+int(self.c('winfo', 'width', w)), int(self.c('winfo', 'rootx', '.analog_lens'))+900)
 

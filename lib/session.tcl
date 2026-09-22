@@ -105,7 +105,7 @@ proc ::analog_lens::session_data {} {
         # Startup integration may run at idle before that Configure event.
         set width [winfo width $window]; set height [winfo height $window]
         if {$width >= 100 && $height >= 100} {set session_geometry "${width}x${height}"}
-        if {[winfo exists $window.tabs.op.panes] && $width >= 100} {set session_sash [$window.tabs.op.panes sashpos 0]}
+        if {[winfo exists $window.tabs.op.canvas.content.panes] && $width >= 100} {set session_sash [$window.tabs.op.canvas.content.panes sashpos 0]}
     }
     set prefs {}
     foreach key {live only_review sizing_visible sort_key sort_desc lut_y lut_length target_gmid target_gm_u target_length} {
@@ -174,7 +174,7 @@ proc ::analog_lens::restore_layout {} {
         set height [expr {max(640,min($height,[winfo screenheight $window]))}]
         wm geometry $window ${width}x${height}
     }
-    if {$session_sash ne {}} {$window.tabs.op.panes sashpos 0 $session_sash}
+    if {$session_sash ne {}} {$window.tabs.op.canvas.content.panes sashpos 0 $session_sash}
 }
 proc ::analog_lens::session_dialog {action} {
     variable window; variable session_path
@@ -195,8 +195,8 @@ proc ::analog_lens::select_baseline {} {
         set entry [dict get $baselines $baseline_choice]
         set snapshot [dict get $entry records]; set snapshot_context [dict get $entry context]; set snapshot_metadata [dict get $entry metadata]
     }
-    if {[llength [info commands winfo]] && [winfo exists $window.tabs.compare.saved.choice]} {
-        $window.tabs.compare.saved.choice configure -values [dict keys $baselines]
+    if {[llength [info commands winfo]] && [winfo exists $window.tabs.compare.canvas.content.saved.choice]} {
+        $window.tabs.compare.canvas.content.saved.choice configure -values [dict keys $baselines]
     }
     if {[llength [info commands winfo]]} {render_compare}
 }

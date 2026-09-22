@@ -6,9 +6,9 @@ source [file join $root analog_lens.tcl]
 proc bgerror {message} {puts stderr "$message\n$::errorInfo"; exit 1}
 ::analog_lens::show
 update
-set rows [.analog_lens.tabs.op.panes.list.tree children {}]
+set rows [.analog_lens.tabs.op.canvas.content.panes.list.tree children {}]
 if {[llength $rows] != 2} {error {Expected two device rows}}
-.analog_lens.tabs.op.panes.list.tree selection set d1
+.analog_lens.tabs.op.canvas.content.panes.list.tree selection set d1
 ::analog_lens::inspect_selection
 ::analog_lens::locate
 ::analog_lens::keep_baseline

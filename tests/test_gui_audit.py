@@ -62,6 +62,29 @@ class GUIAudit(unittest.TestCase):
         self.c('event','generate',field,'<Control-w>');self.settle()
         self.assertFalse(self.c('winfo','exists',w));self.assertTrue(self.c('winfo','exists',W))
 
+    def test_original_tabs_scroll_to_content_and_keyboard_focus(self):
+        self.call('close_window')
+        for font in ('TkDefaultFont','TkTextFont','TkFixedFont'):
+            self.c('font','configure',font,'-size',14)
+        self.call('show');self.c('wm','geometry',W,'900x640');self.call('keep_baseline')
+        for tab, target in [('op','panes.detail.copy'),('lut','plot'),
+                            ('compare','tree'),('setup','help')]:
+            with self.subTest(tab=tab):
+                canvas=W+'.tabs.'+tab+'.canvas';body=canvas+'.content'
+                self.c(W+'.tabs','select',W+'.tabs.'+tab);self.settle()
+                self.assertGreaterEqual(int(self.c('winfo','height',body)),int(self.c('winfo','reqheight',body)))
+                self.c(canvas,'yview','moveto',0)
+                widget=body+'.'+target
+                self.c('focus','-force',widget);self.settle()
+                top=int(self.c('winfo','rooty',canvas));y=int(self.c('winfo','rooty',widget))
+                self.assertGreaterEqual(y,top)
+                self.assertLessEqual(y+min(60,int(self.c('winfo','height',widget))),top+int(self.c('winfo','height',canvas)))
+                self.c(canvas,'yview','moveto',1);self.settle()
+                self.assertEqual(float(self.c(canvas,'yview')[1]),1)
+        # Returning to an earlier control must not scroll to its ancestor's end.
+        self.c('focus','-force',W+'.tabs.setup.canvas.content.targets.gmid_min');self.settle()
+        self.assertLess(float(self.c(W+'.tabs.setup.canvas','yview')[0]),.3)
+
     def test_busy_batch_locks_requests_and_preserves_log_reading_position(self):
         self.call('batch_dialog');w=W+'.batch';b=w+'.page.canvas.content'
         self.set('char_log','\n'.join('Log line '+str(i) for i in range(100)))

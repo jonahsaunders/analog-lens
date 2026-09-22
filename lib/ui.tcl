@@ -100,7 +100,7 @@ proc ::analog_lens::copy_text {text} {
 proc ::analog_lens::copy_detail {} {
     variable window; variable status
     if {[chosen] eq {}} {return}
-    copy_text [$window.tabs.op.panes.detail.text get 1.0 end-1c]
+    copy_text [$window.tabs.op.canvas.content.panes.detail.text get 1.0 end-1c]
     set status {Device details copied.}
 }
 proc ::analog_lens::clear_search {} {
@@ -110,8 +110,8 @@ proc ::analog_lens::clear_search {} {
 proc ::analog_lens::find_device {} {
     variable window
     $window.tabs select $window.tabs.op
-    focus $window.tabs.op.filters.search
-    $window.tabs.op.filters.search selection range 0 end
+    focus $window.tabs.op.canvas.content.filters.search
+    $window.tabs.op.canvas.content.filters.search selection range 0 end
 }
 proc ::analog_lens::open_tab {tab} {
     variable window
@@ -164,7 +164,7 @@ proc ::analog_lens::layout_toolbar {} {
     if {![winfo exists $w]} {return}
     set width [expr {[winfo width $window.root]-40}]
     flow_controls $w {run cancel load refresh export log session} $width
-    set filters $window.tabs.op.filters
+    set filters $window.tabs.op.canvas.content.filters
     if {[winfo exists $filters]} {flow_controls $filters {find search clear review follow} [expr {max(300,$width-24)}]}
     $window.root.head.pdk configure -wraplength [expr {max(180,int($width*0.55))}]
     fit_lookup_layout
@@ -233,6 +233,37 @@ proc ::analog_lens::action_bar {w names} {
     flow_controls $w $names [expr {max(1,[winfo width $w]-24)}]
     bind $w <Configure> [format {::analog_lens::flow_controls %s %s [expr {%%w-24}]} [list $w] [list $names]]
 }
+proc ::analog_lens::tab_page {w} {
+    set body [scroll_page $w]
+    # Keep a usable table/chart height; short windows scroll the complete tab.
+    bind $w.canvas <Configure> [list ::analog_lens::tab_region $w.canvas]
+    bind $body <Configure> [list ::analog_lens::tab_region $w.canvas]
+    set host [winfo toplevel $w]
+    bind $host <FocusIn> +[list ::analog_lens::page_focus $w.canvas [list $body] %W]
+    bind $host <Button-4> +[list ::analog_lens::page_wheel $w.canvas [list $body] %W -3]
+    bind $host <Button-5> +[list ::analog_lens::page_wheel $w.canvas [list $body] %W 3]
+    bind $host <MouseWheel> [format {+::analog_lens::page_wheel %s %s %%W [expr {-%%D/120}]} [list $w.canvas] [list $body]]
+    return $body
+}
+proc ::analog_lens::tab_region {canvas} {
+    if {![winfo exists $canvas]} {return}
+    set height [expr {max([winfo height $canvas],[winfo reqheight $canvas.content])}]
+    $canvas itemconfigure content -width [winfo width $canvas] -height $height
+    page_region $canvas
+}
+proc ::analog_lens::tab_content_geometry {widget} {
+    # Wrapped labels can change the requested height without resizing a body
+    # whose canvas item has an explicit height. Recheck after child layout.
+    foreach tab {op lut compare setup} {
+        set canvas $::analog_lens::window.tabs.$tab.canvas
+        if {[page_contains [list $canvas.content] $widget]} {
+            set command [list ::analog_lens::tab_region $canvas]
+            after cancel $command
+            after idle $command
+            return
+        }
+    }
+}
 proc ::analog_lens::dialog_page {w} {
     ttk::frame $w.page; pack $w.page -fill both -expand 1
     set body [scroll_page $w.page]
@@ -251,6 +282,8 @@ proc ::analog_lens::page_contains {roots widget} {
     return 0
 }
 proc ::analog_lens::page_focus {canvas roots widget} {
+    # Tk also sends FocusIn to ancestors; only reveal the actual focus owner.
+    if {[focus] ne $widget} {return}
     if {![winfo exists $canvas] || ![page_contains $roots $widget]} {return}
     if {[winfo height $canvas] < 80} {return}
     set total [lindex [$canvas cget -scrollregion] 3]
@@ -278,13 +311,13 @@ proc ::analog_lens::invalidate_sizing {args} {
     variable sizing_text; variable sizing_error; variable window
     set sizing_text {}; set sizing_error {}
     foreach n {gmid gm length} {
-        set w $window.tabs.lut.size.$n
+        set w $window.tabs.lut.canvas.content.size.$n
         if {[winfo exists $w]} {$w state !invalid}
     }
 }
 proc ::analog_lens::constrain_panes {} {
     variable window
-    set w $window.tabs.op.panes
+    set w $window.tabs.op.canvas.content.panes
     if {![winfo exists $w]} {return}
     set width [winfo width $w]
     if {$width < 500} {return}
@@ -295,7 +328,7 @@ proc ::analog_lens::constrain_panes {} {
 }
 proc ::analog_lens::toggle_sizing {} {
     variable window; variable sizing_visible
-    set w $window.tabs.lut
+    set w $window.tabs.lut.canvas.content
     if {$sizing_visible} {
         pack $w.size -before $w.note -side bottom -fill x -pady {10 0}
     } else {pack forget $w.size}

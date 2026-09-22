@@ -59,7 +59,7 @@ class NativeGUI(unittest.TestCase):
             self.c('rename', 'native_file_dialog', 'tk_getOpenFile')
 
     def test_sort_toggle_refresh_selection_and_missing_last(self):
-        tree = W + '.tabs.op.panes.list.tree'
+        tree = W + '.tabs.op.canvas.content.panes.list.tree'
         self.c(tree, 'selection', 'set', 'd1')
         self.call('inspect_selection')
         self.call('sort_table', 'gmid')
@@ -77,11 +77,11 @@ class NativeGUI(unittest.TestCase):
         self.set('search', 'no-such-device')
         self.call('render')
         self.assertIn('No matching', self.get('empty_text'))
-        self.assertEqual(self.c(W + '.tabs.op.panes.detail.text', 'get', '1.0', 'end-1c'), '')
-        self.assertTrue(self.c(W + '.tabs.op.panes.detail.locate', 'instate', 'disabled'))
+        self.assertEqual(self.c(W + '.tabs.op.canvas.content.panes.detail.text', 'get', '1.0', 'end-1c'), '')
+        self.assertTrue(self.c(W + '.tabs.op.canvas.content.panes.detail.locate', 'instate', 'disabled'))
         self.call('clear_search')
-        self.assertEqual(len(self.c(W + '.tabs.op.panes.list.tree', 'children', '')), 2)
-        self.assertFalse(self.c(W + '.tabs.op.panes.detail.locate', 'instate', 'disabled'))
+        self.assertEqual(len(self.c(W + '.tabs.op.canvas.content.panes.list.tree', 'children', '')), 2)
+        self.assertFalse(self.c(W + '.tabs.op.canvas.content.panes.detail.locate', 'instate', 'disabled'))
 
     def test_invalid_targets_are_atomic_and_recover(self):
         before = self.get('limits')
@@ -135,7 +135,7 @@ class NativeGUI(unittest.TestCase):
         self.call('keep_baseline')
         self.app.tk.eval('dict set ::mock::vectors {@m.xm1.m0[gm]} 0.001')
         self.call('refresh')
-        tree = W + '.tabs.compare.tree'
+        tree = W + '.tabs.compare.canvas.content.tree'
         row = self.c(tree, 'children', '')[0]
         self.assertEqual(self.c(tree, 'set', row, 'delta'), '+25.00')
         self.set('active_context', 'another hierarchy')
@@ -148,8 +148,8 @@ class NativeGUI(unittest.TestCase):
         self.c('focus', '-force', W + '.root.tools.run')
         self.c('event', 'generate', W + '.root.tools.run', '<Control-f>')
         self.app.update()
-        self.assertEqual(str(self.c('focus')), W + '.tabs.op.filters.search')
-        tree = W + '.tabs.op.panes.list.tree'
+        self.assertEqual(str(self.c('focus')), W + '.tabs.op.canvas.content.filters.search')
+        tree = W + '.tabs.op.canvas.content.panes.list.tree'
         self.c(tree, 'selection', 'set', 'd0')
         self.c('focus', '-force', tree)
         self.c('event', 'generate', tree, '<Return>')
@@ -174,8 +174,8 @@ class NativeGUI(unittest.TestCase):
         self.set('target_gmid', '16')
         self.call('close_window')
         self.call('show')
-        self.assertTrue(self.c(W + '.tabs.lut.filters.model.value', 'cget', '-values'))
-        self.assertEqual(len(self.c(W + '.tabs.lut.size.length', 'cget', '-values')), 2)
+        self.assertTrue(self.c(W + '.tabs.lut.canvas.content.filters.model.value', 'cget', '-values'))
+        self.assertEqual(len(self.c(W + '.tabs.lut.canvas.content.size.length', 'cget', '-values')), 2)
         self.assertEqual(str(self.get('target_gmid')), '16')
         traces = self.c('trace', 'info', 'variable', '::analog_lens::target_gmid')
         self.assertEqual(len(traces), 1)
@@ -198,7 +198,7 @@ class NativeGUI(unittest.TestCase):
         self.c(W + '.tabs', 'select', W + '.tabs.lut')
         self.c('wm', 'geometry', W, '900x640')
         self.settle()
-        plot = W + '.tabs.lut.plot'
+        plot = W + '.tabs.lut.canvas.content.plot'
         ticks = {}
         for item in self.c(plot, 'find', 'all'):
             if str(self.c(plot, 'type', item)) == 'text':
@@ -329,7 +329,9 @@ class NativeGUI(unittest.TestCase):
             left = int(self.c('winfo', 'rootx', W))
             top = int(self.c('winfo', 'rooty', W))
             for path in paths:
-                w = W + '.tabs.' + tab + path
+                w = W + '.tabs.' + tab + '.canvas.content' + path
+                self.c('focus', '-force', w)
+                self.settle()
                 with self.subTest(widget=w):
                     self.assertTrue(self.c('winfo', 'ismapped', w))
                     x = int(self.c('winfo', 'rootx', w)) - left
@@ -346,7 +348,7 @@ class NativeGUI(unittest.TestCase):
         self.set('sizing_visible', 0)
         self.call('toggle_sizing')
         self.settle()
-        self.assertTrue(self.c('winfo', 'ismapped', W + '.tabs.lut.charttools.export'))
+        self.assertTrue(self.c('winfo', 'ismapped', W + '.tabs.lut.canvas.content.charttools.export'))
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ proc ::analog_lens::safe {command} {
             catch {render}
             foreach key {sample dataset} {
                 if {[string match -nocase *$key* $msg]} {
-                    set w $window.tabs.op.point.$key
+                    set w $window.tabs.op.canvas.content.point.$key
                     if {[winfo exists $w]} {$w state invalid; focus $w}
                 }
             }
@@ -104,10 +104,14 @@ proc ::analog_lens::show {} {
     foreach {n title} {op {Operating point} lut {gm/Id explorer} compare {Compare runs} setup {Setup & help} design {Size & verify}} {
         ttk::frame $window.tabs.$n -style AL.TFrame -padding 12
         $window.tabs add $window.tabs.$n -text $title
-        build_$n $window.tabs.$n
+        if {$n eq "design"} {
+            build_$n $window.tabs.$n
+        } else {
+            build_$n [tab_page $window.tabs.$n]
+        }
     }
     install_shortcuts
-    bind $window <Configure> {::analog_lens::schedule_layout %W}
+    bind $window <Configure> {::analog_lens::schedule_layout %W; ::analog_lens::tab_content_geometry %W}
     bind $root <Configure> [list ::analog_lens::schedule_layout $window]
     foreach var {target_length target_gmid target_gm_u} {
         trace add variable ::analog_lens::$var write ::analog_lens::invalidate_sizing
@@ -124,7 +128,7 @@ proc ::analog_lens::show {} {
 proc ::analog_lens::close_window {} {
     variable window; variable timer; variable plot_after; variable layout_after
     set ::analog_lens::session_geometry "[winfo width $window]x[winfo height $window]"
-    set ::analog_lens::session_sash [$window.tabs.op.panes sashpos 0]
+    set ::analog_lens::session_sash [$window.tabs.op.canvas.content.panes sashpos 0]
     foreach id [list $timer $plot_after $layout_after] {if {$id ne {}} {after cancel $id}}
     set timer {}; set plot_after {}; set layout_after {}
     foreach var {target_length target_gmid target_gm_u} {
@@ -218,7 +222,7 @@ proc ::analog_lens::build_op {w} {
 proc ::analog_lens::render {} {
     variable records; variable search; variable only_review; variable window; variable selected
     variable device_summary; variable empty_text
-    set tree $window.tabs.op.panes.list.tree
+    set tree $window.tabs.op.canvas.content.panes.list.tree
     if {![winfo exists $tree]} {return}
     set before $selected; $tree delete [$tree children {}]; set i -1; set reviews 0
     foreach r $records {
@@ -234,7 +238,7 @@ proc ::analog_lens::render {} {
     apply_sort
     set count [llength [$tree children {}]]
     set device_summary "$count of [llength $records] devices · $reviews to review"
-    set empty $window.tabs.op.panes.list.empty
+    set empty $window.tabs.op.canvas.content.panes.list.empty
     if {!$count} {
         set selected {}
         set filtered [expr {$search ne {} || $only_review}]
@@ -254,13 +258,13 @@ proc ::analog_lens::render {} {
 
 proc ::analog_lens::chosen {} {
     variable records; variable window
-    set tree $window.tabs.op.panes.list.tree
+    set tree $window.tabs.op.canvas.content.panes.list.tree
     if {![winfo exists $tree] || ![llength [$tree selection]]} {return {}}
     return [lindex $records [string range [lindex [$tree selection] 0] 1 end]]
 }
 proc ::analog_lens::set_detail {text} {
     variable window
-    set w $window.tabs.op.panes.detail.text
+    set w $window.tabs.op.canvas.content.panes.detail.text
     if {![winfo exists $w]} {return}
     $w configure -state normal; $w delete 1.0 end; $w insert end $text; $w configure -state disabled
 }
@@ -295,7 +299,7 @@ proc ::analog_lens::locate {} {
 proc ::analog_lens::follow_selection {} {
     variable window; variable records
     set owner [lindex [xschem selected_set] 0]
-    set tree $window.tabs.op.panes.list.tree
+    set tree $window.tabs.op.canvas.content.panes.list.tree
     if {$owner eq {} || ![winfo exists $tree]} {return}
     set i -1
     foreach r $records {
@@ -325,7 +329,7 @@ proc ::analog_lens::sort_table {key {toggle 1}} {
 }
 proc ::analog_lens::apply_sort {} {
     variable window; variable records; variable sort_key; variable sort_desc; variable sort_label
-    set tree $window.tabs.op.panes.list.tree
+    set tree $window.tabs.op.canvas.content.panes.list.tree
     if {![winfo exists $tree]} {return}
     set map [dict create id id gmid gmid gain gain margin headroom]
     set pairs {}; set missing {}
@@ -383,19 +387,19 @@ proc ::analog_lens::update_run_controls {} {
     set_enabled $window.root.tools.cancel [expr {!$idle && !$::analog_lens::run_cancelled}]
     $window.root.tools.session.menu entryconfigure 0 -state [expr {$idle ? "normal" : "disabled"}]
     set_enabled $window.root.tools.export $current
-    set_enabled $window.tabs.compare.keep $current
-    set_enabled $window.tabs.op.point.color $current
-    foreach n {locate annotate copy} {set_enabled $window.tabs.op.panes.detail.$n [expr {$current && [chosen] ne {}}]}
+    set_enabled $window.tabs.compare.canvas.content.keep $current
+    set_enabled $window.tabs.op.canvas.content.point.color $current
+    foreach n {locate annotate copy} {set_enabled $window.tabs.op.canvas.content.panes.detail.$n [expr {$current && [chosen] ne {}}]}
     foreach n {sample dataset} {
-        set_enabled $window.tabs.op.point.$n $idle
-        if {$current} {$window.tabs.op.point.$n state !invalid}
+        set_enabled $window.tabs.op.canvas.content.point.$n $idle
+        if {$current} {$window.tabs.op.canvas.content.point.$n state !invalid}
     }
-    set w $window.tabs.op.point.type
+    set w $window.tabs.op.canvas.content.point.type
     $w state [expr {$idle ? "!disabled readonly" : "disabled"}]
     set has_lut [expr {[llength $lut_rows] > 0 && $lut_slice ne {}}]
-    set_enabled $window.tabs.lut.size.calc $has_lut
-    set_enabled $window.tabs.lut.tools.data $has_lut
-    set_enabled $window.tabs.lut.tools.sizing $has_lut
+    set_enabled $window.tabs.lut.canvas.content.size.calc $has_lut
+    set_enabled $window.tabs.lut.canvas.content.tools.data $has_lut
+    set_enabled $window.tabs.lut.canvas.content.tools.sizing $has_lut
     update_run_feedback
     if {$idle} {
         $window.root.tools.run configure -text {Run operating point}
@@ -546,7 +550,7 @@ proc ::analog_lens::draw_plot {} {
     variable window; variable plot_after; variable lut_rows; variable lut_slice; variable lut_y; variable lut_note; variable colors
     variable plot_view; variable plot_bounds; variable plot_points; variable plot_point_index
     set plot_points {}
-    set plot_after {}; set c $window.tabs.lut.plot
+    set plot_after {}; set c $window.tabs.lut.canvas.content.plot
     if {![winfo exists $c]} {return}
     $c delete all; set width [winfo width $c]; set height [winfo height $c]
     if {$width < 180 || $height < 140} {
@@ -631,7 +635,7 @@ proc ::analog_lens::calculate_size {} {
     set sizing_text {}; set sizing_error {}
     if {[catch {normalize_sizing_inputs} why]} {set sizing_error "Sizing inputs must be finite numbers greater than zero. $why"; return}
     foreach {name value title} [list gmid $target_gmid {gm/Id} gm $target_gm_u {Target gm}] {
-        set w $window.tabs.lut.size.$name; $w state !invalid
+        set w $window.tabs.lut.canvas.content.size.$name; $w state !invalid
         if {[number $value] eq {} || $value <= 0} {
             set sizing_error "$title must be a finite number greater than zero."
             $w state invalid; focus $w; return
@@ -639,7 +643,7 @@ proc ::analog_lens::calculate_size {} {
     }
     if {[catch {sizing $lut_rows $lut_slice $target_length $target_gmid $target_gm_u} result]} {
         set sizing_error $result
-        $window.tabs.lut.size.gmid state invalid; focus $window.tabs.lut.size.gmid; return
+        $window.tabs.lut.canvas.content.size.gmid state invalid; focus $window.tabs.lut.canvas.content.size.gmid; return
     }
     set sizing_text "Estimated Id: [eng [get $result id] A]   ·   Total width: [format %.4g [get $result width]] µm\nPreview maps total width to the finger/copy counts below. Verify the estimate by simulation."
 }
@@ -699,9 +703,9 @@ proc ::analog_lens::keep_baseline {} {
 proc ::analog_lens::render_compare {} {
     variable window; variable snapshot; variable records; variable snapshot_context; variable active_context; variable compare_summary
     variable snapshot_metadata; variable result_metadata; variable comparison_rows
-    set tree $window.tabs.compare.tree; if {![winfo exists $tree]} {return}
+    set tree $window.tabs.compare.canvas.content.tree; if {![winfo exists $tree]} {return}
     $tree delete [$tree children {}]; set comparison_rows {}
-    set_enabled $window.tabs.compare.copy 0; set_enabled $window.tabs.compare.saved.export 0
+    set_enabled $window.tabs.compare.canvas.content.copy 0; set_enabled $window.tabs.compare.canvas.content.saved.export 0
     if {![llength $snapshot]} {set compare_summary {No baseline yet. Load results, then keep a named baseline.}; return}
     if {[context_key $snapshot_context] ne [context_key $active_context]} {
         set compare_summary "Baseline belongs to [lindex $snapshot_context 1] ([lindex $snapshot_context 2]). Return to that hierarchy to compare."; return
@@ -726,7 +730,7 @@ proc ::analog_lens::render_compare {} {
         if {[get $snapshot_metadata $key] eq {} || [get $result_metadata $key] eq {}} {lappend unknown [condition_label $key]}
     }
     if {[llength $unknown]} {append compare_summary "\nConditions unverified: [join $unknown {, }]. Record known values in Setup & help."}
-    set_enabled $window.tabs.compare.copy 1; set_enabled $window.tabs.compare.saved.export 1
+    set_enabled $window.tabs.compare.canvas.content.copy 1; set_enabled $window.tabs.compare.canvas.content.saved.export 1
 }
 
 proc ::analog_lens::build_setup {w} {
@@ -782,22 +786,22 @@ proc ::analog_lens::apply_targets {} {
     variable limits; variable edit_limits; variable targets_message; variable window; variable status
     set next {}; set targets_message {}
     set labels [dict create gmid_min {Minimum gm/Id} gmid_max {Maximum gm/Id} headroom_min {Minimum headroom} current_floor {Current floor}]
-    foreach key [dict keys $labels] {$window.tabs.setup.targets.$key state !invalid}
-    $window.tabs.setup.message configure -style AL.Error.TLabel
+    foreach key [dict keys $labels] {$window.tabs.setup.canvas.content.targets.$key state !invalid}
+    $window.tabs.setup.canvas.content.message configure -style AL.Error.TLabel
     foreach key [dict keys $labels] {
         set n [number $edit_limits($key)]
         if {$n eq {} || $n < 0} {
             set targets_message "[dict get $labels $key] must be a finite, nonnegative number."
-            $window.tabs.setup.targets.$key state invalid; focus $window.tabs.setup.targets.$key; return
+            $window.tabs.setup.canvas.content.targets.$key state invalid; focus $window.tabs.setup.canvas.content.targets.$key; return
         }
         dict set next $key $n
     }
     if {[dict get $next gmid_min] >= [dict get $next gmid_max]} {
         set targets_message {Minimum gm/Id must be less than maximum gm/Id.}
-        $window.tabs.setup.targets.gmid_min state invalid; focus $window.tabs.setup.targets.gmid_min; return
+        $window.tabs.setup.canvas.content.targets.gmid_min state invalid; focus $window.tabs.setup.canvas.content.targets.gmid_min; return
     }
     set limits $next
     if {[catch {refresh} message]} {set status $message; render}
-    $window.tabs.setup.message configure -style AL.Muted.TLabel
+    $window.tabs.setup.canvas.content.message configure -style AL.Muted.TLabel
     set targets_message {Targets applied to this session.}
 }

@@ -42,7 +42,7 @@ proc ::analog_lens::choose_lookup_filter {changed} {
         set options {}; foreach s $candidates {lappend options [lindex $s $index]}
         if {$index < 3} {set options [lsort -unique $options]} else {set options [lsort -real -unique $options]}
         if {$lut_filter($key) ni $options} {set lut_filter($key) [lindex $options 0]}
-        set w $window.tabs.lut.filters.$key.value
+        set w $window.tabs.lut.canvas.content.filters.$key.value
         if {[winfo exists $w]} {$w configure -values $options}
         set next {}; foreach s $candidates {if {[lindex $s $index] eq $lut_filter($key)} {lappend next $s}}
         set candidates $next; incr index
@@ -51,11 +51,11 @@ proc ::analog_lens::choose_lookup_filter {changed} {
     set lengths [lsort -real [dict keys [lut_curves $lut_rows $lut_slice gain]]]
     if {$target_length ni $lengths} {set target_length [lindex $lengths 0]}
     if {$lut_length ni $lengths} {set lut_length All}
-    foreach {path values} [list $window.tabs.lut.filters.length.value [linsert $lengths 0 All] $window.tabs.lut.size.length $lengths] {
+    foreach {path values} [list $window.tabs.lut.canvas.content.filters.length.value [linsert $lengths 0 All] $window.tabs.lut.canvas.content.size.length $lengths] {
         if {[winfo exists $path]} {$path configure -values $values}
     }
     invalidate_sizing; reset_plot
-    if {[winfo exists $window.tabs.lut.size.calc]} {update_run_controls}
+    if {[winfo exists $window.tabs.lut.canvas.content.size.calc]} {update_run_controls}
 }
 proc ::analog_lens::visible_curves {} {
     variable lut_rows; variable lut_slice; variable lut_y; variable lut_length
@@ -73,21 +73,14 @@ proc ::analog_lens::reset_plot {} {
 }
 proc ::analog_lens::fit_lookup_layout {} {
     variable window; variable sizing_visible
-    set w $window.tabs.lut
+    set w $window.tabs.lut.canvas.content
     if {![winfo exists $w.charttools]} {return}
     flow_controls $w.tools {load characterize metric sizing data} [expr {max(360,[winfo width $w]-24)}]
-    set needed 170
-    foreach part {tools source filters charttools point note} {incr needed [winfo reqheight $w.$part]}
-    if {$sizing_visible} {incr needed [winfo reqheight $w.size]}
-    if {$sizing_visible && [winfo height $w] > 1 && [winfo height $w] < $needed} {
-        foreach part {charttools point plot} {pack forget $w.$part}
-        pack $w.compact -after $w.filters -fill x -pady 8
-    } else {
-        pack forget $w.compact
-        pack $w.charttools -after $w.filters -fill x -pady {0 4}
-        pack $w.point -after $w.charttools -fill x -pady {0 4}
-        pack $w.plot -after $w.point -fill both -expand 1
-    }
+    # The tab scrolls when short, so chart and sizing can stay available together.
+    pack forget $w.compact
+    pack $w.charttools -after $w.filters -fill x -pady {0 4}
+    pack $w.point -after $w.charttools -fill x -pady {0 4}
+    pack $w.plot -after $w.point -fill both -expand 1
 }
 proc ::analog_lens::zoom_plot {factor} {
     variable plot_bounds; variable plot_view
@@ -112,7 +105,7 @@ proc ::analog_lens::clip_segment {x0 y0 x1 y1 bounds} {
 }
 proc ::analog_lens::inspect_plot {x y} {
     variable plot_points; variable plot_point_index; variable window
-    focus $window.tabs.lut.plot
+    focus $window.tabs.lut.canvas.content.plot
     set nearest -1; set distance 400; set i 0
     foreach p $plot_points {
         lassign $p px py
@@ -129,7 +122,7 @@ proc ::analog_lens::step_plot_point {step} {
 }
 proc ::analog_lens::show_plot_point {} {
     variable plot_point_index; variable plot_points; variable plot_point_text; variable window; variable lut_y; variable colors
-    set c $window.tabs.lut.plot; $c delete inspected
+    set c $window.tabs.lut.canvas.content.plot; $c delete inspected
     if {$plot_point_index < 0 || $plot_point_index >= [llength $plot_points]} {return}
     lassign [lindex $plot_points $plot_point_index] x y length gmid value
     set unit [dict get {gain V/V ft Hz density A/µm} $lut_y]
@@ -152,7 +145,7 @@ proc ::analog_lens::xml_escape {value} {return [string map {& &amp; < &lt; > &gt
 proc ::analog_lens::export_plot_svg {path} {
     variable window; variable lut_source; variable slice_label; variable lut_y; variable lut_length
     draw_plot
-    set c $window.tabs.lut.plot; set width [winfo width $c]; set height [winfo height $c]
+    set c $window.tabs.lut.canvas.content.plot; set width [winfo width $c]; set height [winfo height $c]
     set out "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$width\" height=\"$height\" viewBox=\"0 0 $width $height\">\n"
     append out "<title>Analog Lens lookup chart</title>\n<desc>[xml_escape "$lut_source; $slice_label; metric $lut_y; length $lut_length; [lookup_provenance_warning]"]</desc>\n"
     append out "<rect width=\"100%\" height=\"100%\" fill=\"[$c cget -background]\"/>\n"
