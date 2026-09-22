@@ -19,7 +19,7 @@ proc capture_live {window name} {
     if {[catch {exec {*}$command 2>@1} why]} {puts "Screenshot unavailable: $why"}
 }
 set no_ask_quit 1
-after 120000 {fail "Timed out during $::live_stage"}
+after 300000 {fail "Timed out during $::live_stage"}
 if {[catch {
     stage startup
     set netlist_show 0

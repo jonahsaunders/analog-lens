@@ -101,6 +101,13 @@ def read_graph(deck, with_init=True):
                     warnings.append(str(exc))
             if not line or line.startswith('*'):
                 continue
+            # Model equations are opaque data. Tokenize only dependency/library
+            # directives; hashing still covers every byte in each source file.
+            directive = re.match(r'(?i)^(\.include|\.inc|\.lib|\.endl|source|osdi|pre_osdi)(?:\s|$)', line)
+            if not directive:
+                if active:
+                    lines.append(line)
+                continue
             try:
                 parts = tokens(line)
             except ValueError:
@@ -146,6 +153,10 @@ def devices_from_lines(lines, pdk):
     """Expand design subcircuits; stop at known PDK device wrappers."""
     blocks = {'': []}; current = ''; control = False
     for line in lines:
+        # Compact-model equations cannot introduce design instances. Avoid
+        # tokenizing thousands of long .model/.param lines a second time.
+        if not re.match(r'(?i)^(?:[xmnq]|\.(?:subckt|ends|control|endc|if|elseif|else|endif)(?:\s|$))', line):
+            continue
         words = tokens(line)
         if not words:
             continue

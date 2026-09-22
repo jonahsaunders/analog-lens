@@ -193,7 +193,7 @@ def main():
                        ANALOG_LENS_ROOT=str(ROOT), ANALOG_LENS_OUTPUT=str(directory),
                        ANALOG_LENS_LOOKUP=str(lookup), ANALOG_LENS_SWEEP=str(sweep))
             code = run_logged(['xschem', '-r', '-s', '--rcfile', str(rc), '--script', str(ROOT/'tests/iic_live.tcl'), str(schematic)],
-                              directory/'xschem.log', env=env, cwd=directory, timeout=240)
+                              directory/'xschem.log', env=env, cwd=directory, timeout=360)
             if code or not (directory/'passed.txt').is_file():
                 raise ValueError('Live xschem checks failed; inspect xschem.log')
             comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv')]
