@@ -246,7 +246,7 @@ proc ::analog_lens::attach_native_result {} {
         if {$type eq "auto"} {set type [raw_plot_type $path]}
         read_results $path $type
         set ::analog_lens::sample 0; set ::analog_lens::dataset 0
-        set metadata [dict merge [dict get $job metadata] [dict create raw [file_signature $path] analysis $type sample 0 dataset 0]]
+        set metadata [dict merge [dict get $job metadata] [dict create raw [raw_signature $path] analysis $type sample 0 dataset 0]]
         set ::analog_lens::result_metadata $metadata
         refresh
         catch {atomic_write [file rootname $path].metadata $metadata}

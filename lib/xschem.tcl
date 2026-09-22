@@ -133,7 +133,7 @@ proc ::analog_lens::read_results {file type} {
     set sidecar [file rootname $file].metadata
     if {[file isfile $sidecar] && [file size $sidecar] < 1000000} {
         if {![catch {set metadata [read_text $sidecar]; validate_metadata $metadata}] &&
-            [get $metadata raw] eq [file_signature $file] && [get $metadata analysis] eq $type} {
+            [get $metadata raw] eq [raw_signature $file] && [get $metadata analysis] eq $type} {
             set ::analog_lens::result_metadata $metadata
         }
     }
@@ -199,7 +199,7 @@ proc ::analog_lens::run_op {} {
     if {![llength $run_devices]} {error {No supported transistors were found in the generated netlist.}}
     write_text $deck [op_deck [read_text $original] [save_lines $run_devices] $run_file]
     set run_metadata [dict merge [capture_metadata] [dict create analysis op sample 0 dataset 0 \
-        run_context $run_context raw [file_signature $run_file] input_deck [file_signature $deck] \
+        run_context $run_context raw [raw_signature $run_file] input_deck [file_signature $deck] \
         input_crc32 [format %08x [zlib crc32 [read_text $deck]]] design_stamp [design_stamp]]]
     set run_metadata [recorded_conditions [dict merge $run_metadata [dependency_snapshot $deck]]]
     set run_log {}; set run_started [clock seconds]; set run_cancelled 0; set run_processes {}
@@ -250,7 +250,7 @@ proc ::analog_lens::run_readable {} {
     } else {set run_state completed}
     catch {write_text [file rootname $run_file].log $run_log}
     if {[file exists $run_file] && !$run_cancelled} {
-        set metadata [dict merge $run_metadata [dict create raw [file_signature $run_file] run_state $run_state]]
+        set metadata [dict merge $run_metadata [dict create raw [raw_signature $run_file] run_state $run_state]]
         catch {atomic_write [file rootname $run_file].metadata $metadata}
         if {$run_state eq "completed" && [context] eq $run_context} {set result_metadata $metadata}
     }

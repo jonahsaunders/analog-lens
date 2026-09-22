@@ -58,7 +58,7 @@ proc ::analog_lens::capture_metadata {} {
     set sch {}; catch {set sch [xschem get current_name]}
     return [dict merge $declared [dict create pdk $pdk analysis $type sample $sample dataset $dataset \
         captured_at [clock format [clock seconds] -format {%Y-%m-%dT%H:%M:%SZ} -gmt 1] \
-        extension_version $version raw [file_signature $rawpath] schematic [file_signature $sch] \
+        extension_version $version raw [raw_signature $rawpath] schematic [file_signature $sch] \
         conditions_source {User-declared; not inferred from the simulator}]]
 }
 proc ::analog_lens::capture_result_metadata {} {

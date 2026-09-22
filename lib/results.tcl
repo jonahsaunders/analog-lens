@@ -17,7 +17,7 @@ proc ::analog_lens::archive_run {} {
     file copy $rawpath $dest
     set metadata $::analog_lens::result_metadata
     dict set metadata original_raw $rawpath
-    dict set metadata raw [file_signature $dest]
+    dict set metadata raw [raw_signature $dest]
     dict set metadata archived_signature [raw_signature $dest]
     set deck [get [get $metadata input_deck] path]
     if {[file isfile $deck]} {file copy $deck [file join $directory input.spice]}

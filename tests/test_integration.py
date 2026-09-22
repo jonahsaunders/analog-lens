@@ -270,6 +270,22 @@ class Integration(unittest.TestCase):
         self.call('read_results', str(other), 'op')
         self.assertEqual(int(self.c('string', 'length', self.get('verification_summary'))), 0)
 
+    def test_verification_accepts_changed_raw_with_same_size_and_timestamp(self):
+        self.load_compatible()
+        raw = self.directory/'fast.raw'; raw.write_text('old fixture raw')
+        self.call('read_results', str(raw), 'op'); self.call('refresh')
+        before = raw.stat()
+        old_signature = self.call('file_signature', str(raw))
+        self.set('size_plan', self.call('make_size_plan')); self.call('apply_size_plan')
+        applied = self.call('design_stamp')
+        raw.write_text('new fixture raw')
+        os.utime(raw, ns=(before.st_atime_ns, before.st_mtime_ns))
+        self.assertEqual(self.call('file_signature', str(raw)), old_signature)
+        self.call('read_results', str(raw), 'op'); self.call('refresh')
+        self.c('dict', 'set', '::analog_lens::result_metadata', 'design_stamp', applied)
+        self.call('verify_sizing_result')
+        self.assertEqual(self.c('dict', 'get', self.get('verification_result'), 'state'), 'Pass')
+
     def test_verification_reports_miss_and_missing_without_pass(self):
         plan = self.c('dict', 'create', 'target_gm', .001, 'target_gmid', 15, 'tolerance', 5, 'before_values', '')
         values = self.c('dict', 'create', 'gm', .002, 'gmid', 15)

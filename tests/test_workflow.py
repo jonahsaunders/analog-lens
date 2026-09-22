@@ -99,7 +99,7 @@ class Workflow(unittest.TestCase):
             raw.write_text('fixture data')
             metadata = self.call('capture_metadata')
             self.t.setvar('metadata', metadata)
-            self.t.setvar('signature', self.call('file_signature', str(raw)))
+            self.t.setvar('signature', self.call('raw_signature', str(raw)))
             self.t.eval('dict set metadata raw $signature; dict set metadata corner ss')
             raw.with_suffix('.metadata').write_text(self.t.eval('set metadata'))
             self.call('read_results', str(raw), 'op')
