@@ -40,5 +40,8 @@ proc ::analog_lens::condition_confidence {{device {}}} {
 proc ::analog_lens::recorded_conditions {metadata} {
     # Observed deck values override conflicting user declarations. Unknown
     # values remain explicitly declared, never silently promoted to verified.
+    if {[dict size [get $metadata observed_conditions]]} {
+        dict set metadata conditions_source {Observed deck values where available; remaining values are user-declared or unknown}
+    }
     return [dict merge $metadata [get $metadata observed_conditions]]
 }

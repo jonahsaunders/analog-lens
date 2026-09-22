@@ -158,6 +158,13 @@ if {[catch {
         after 20 {set ::live_tick 1}; vwait ::live_tick
     }
     update; ::analog_lens::attach_native_result
+    puts "VERIFY SUMMARY: $::analog_lens::verification_summary"
+    puts "VERIFY NATIVE: $::analog_lens::native_message"
+    puts "VERIFY SAVED STAMP: [::analog_lens::get $::analog_lens::result_metadata design_stamp]"
+    puts "VERIFY CURRENT STAMP: [::analog_lens::design_stamp]"
+    if {[dict exists $::analog_lens::pending_verifications $::analog_lens::project_key]} {
+        puts "VERIFY APPLIED STAMP: [dict get $::analog_lens::pending_verifications $::analog_lens::project_key applied_stamp]"
+    }
     require {[dict size $::analog_lens::verification_result] > 0} "Sizing verification missing: $::analog_lens::verification_summary"
     require {[dict get $::analog_lens::verification_result state] in {Pass Miss}} {Sizing targets were not measured.}
     ::analog_lens::verification_dialog

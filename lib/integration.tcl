@@ -111,6 +111,11 @@ proc ::analog_lens::update_freshness {} {
         unverified {append ::analog_lens::freshness { · Dependencies unverified.}}
     }
     set ::analog_lens::conditions_confidence [condition_confidence [current_device]]
+    if {$::analog_lens::verification_result ne {} && [get $::analog_lens::verification_result current] && [string match {Out of date*} $::analog_lens::freshness]} {
+        dict set ::analog_lens::verification_result current 0
+        set ::analog_lens::verification_summary {Previous sizing verdict is out of date · Rerun the updated circuit.}
+        update_verification_text
+    }
 }
 proc ::analog_lens::raw_signature {path} {
     set sig [file_signature $path]
@@ -264,7 +269,8 @@ proc ::analog_lens::run_testbench {} {
     if {![llength [info commands ::simulate]]} {error {xschem's simulation command is unavailable.}}
     set busy ::tctx::[xschem get current_win_path]_simulate_id
     if {[info exists $busy]} {error {This testbench is already running. Use xschem's Simulate control to stop it.}}
-    xschem netlist
+    incr ::analog_lens::integration_internal
+    try {xschem netlist} finally {incr ::analog_lens::integration_internal -1}
     ::simulate
 }
 proc ::analog_lens::nearest_sample {axis target dset} {

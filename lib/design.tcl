@@ -87,8 +87,8 @@ proc ::analog_lens::make_size_plan {} {
         foreach key [list $upper $lower] {if {[property $owner [list $key]] ne {}} {dict set edits $key $value}}
     }
     foreach key {nf ng} {if {[property $owner [list $key]] ne {}} {dict set edits $key $fingers}}
-    # SKY130 mult and an explicit m are independent multipliers, not aliases.
-    # Put the requested total multiplicity in mult and neutralize extra m.
+    # The installed SKY130 symbol emits mult=@mult and m=@mult. The
+    # standalone instance m alias is not a second intended copy count.
     if {$family eq "sky130" && [property $owner {m}] ne {}} {dict set edits m 1}
     if {$family ne "sky130" && [property $owner {mult}] ni {{} 1}} {error {Unexpected extra mult property; resolve its simulator meaning before sizing.}}
     set tolerance [number $::analog_lens::verification_tolerance]
@@ -163,13 +163,7 @@ proc ::analog_lens::geometry_plan {device total length fingers copies} {
     if {$fingers eq {}} {set fingers [get $device fingers 1]; if {$fingers eq {}} {set fingers 1}}
     if {$copies eq {}} {
         set copies [get $device multiplier 1]; if {$copies eq {}} {set copies 1}
-        if {$family eq "sky130"} {
-            set extra [property [get $device owner] {m}]
-            if {$extra ne {}} {
-                if {![string is integer -strict $extra] || $extra < 1} {error {Parameterized multiplicity needs an explicit copy count.}}
-                set copies [expr {$copies*$extra}]
-            }
-        }
+
     }
     foreach value [list $fingers $copies] {
         if {![string is integer -strict $value] || $value < 1 || $value > 1024} {error {Fingers and parallel copies must be integers from 1 to 1024. Blank preserves the existing count.}}

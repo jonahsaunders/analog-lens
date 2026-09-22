@@ -263,6 +263,9 @@ class Integration(unittest.TestCase):
         self.call('verification_dialog'); self.app.update()
         self.assertIn('Measured', self.get('verification_text'))
         self.assertIn('Partially verified', self.get('verification_text'))
+        self.c('dict', 'incr', '::analog_lens::edit_revisions', self.get('project_key'))
+        self.call('update_freshness')
+        self.assertIn('out of date', self.get('verification_summary'))
 
     def test_verification_reports_miss_and_missing_without_pass(self):
         plan = self.c('dict', 'create', 'target_gm', .001, 'target_gmid', 15, 'tolerance', 5, 'before_values', '')

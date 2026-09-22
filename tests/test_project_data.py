@@ -87,3 +87,9 @@ class ProjectData(unittest.TestCase):
     def test_large_hierarchy_expands_each_instance_without_host_calls(self):
         lines = [f'x{i} a b c child' for i in range(5000)] + ['.subckt child a b c', 'xm1 a b c c nfet_03v3 w=10u l=.5u', '.ends']
         self.assertEqual(len(devices_from_lines(lines, 'gf180mcuD')), 5000)
+
+    def test_parameter_conditionals_are_allowed_but_conditional_devices_are_not_guessed(self):
+        lines = ['.if flag', '.param foo=1', '.endif', 'xm1 d g 0 0 nfet_03v3 w=1u']
+        self.assertEqual(len(devices_from_lines(lines, 'gf180mcuD')), 1)
+        with self.assertRaises(ValueError):
+            devices_from_lines(['.if flag', 'xm1 d g 0 0 nfet_03v3 w=1u', '.endif'], 'gf180mcuD')

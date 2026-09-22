@@ -39,9 +39,9 @@ has width W / fingers. Width rounds up on the supported 5 nm grid, and preview
 shows the rounded result. Length must already lie on that grid and be present
 in the lookup. The profile guards allow 1–1024 fingers/copies and dimensions up
 to 1000 µm; these upper bounds are software limits, not foundry qualification.
-Parameterized dimensions are still refused. SKY130's extra explicit m is
-combined with existing mult when preserving copies, then normalized to m=1
-with the intended multiplicity in mult. Existing parasitic formulas are retained;
+Parameterized dimensions are still refused. SKY130's symbol emits both
+netlist mult and m from the canonical mult property; an extra instance m
+alias is not treated as another intended copy count. Existing parasitic formulas are retained;
 fixed extracted parasitics need review after geometry changes.
 
 ## Hierarchy without editor navigation

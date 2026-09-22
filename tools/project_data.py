@@ -170,12 +170,17 @@ def devices_from_lines(lines, pdk):
     def walk(block, hierarchy, stack):
         if block in stack or len(stack) > 48:
             raise ValueError('Recursive or excessive circuit hierarchy.')
-        if any(words[0].lower() in ('.if', '.elseif', '.else') for words in blocks[block]):
-            raise ValueError('Conditional design topology needs explicit device saves; no branch is guessed.')
+        conditional_depth = 0
         for words in blocks[block]:
+            if words[0].lower() == '.if':
+                conditional_depth += 1; continue
+            if words[0].lower() == '.endif':
+                conditional_depth = max(0, conditional_depth-1); continue
             name = words[0]; kind = name[0].lower()
             if kind not in 'xmnq' or len(words) < 5:
                 continue
+            if conditional_depth:
+                raise ValueError('Conditional design topology needs explicit device saves; no branch is guessed.')
             # The model/subcircuit name precedes the first parameter assignment.
             positional = re.split(r'\s+(?:params:|[\w.]+\s*=)', ' '.join(words), maxsplit=1, flags=re.I)[0].split()
             if len(positional) < 5:

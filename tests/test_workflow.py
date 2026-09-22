@@ -144,3 +144,10 @@ class Workflow(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    def test_observed_conditions_override_conflicting_declarations(self):
+        meta = self.t.call('dict', 'create', 'corner', 'ss', 'temp_c', 85,
+                           'observed_conditions', self.t.call('dict', 'create', 'corner', 'tt', 'temp_c', 27))
+        actual = self.call('recorded_conditions', meta)
+        self.assertEqual(self.t.call('dict', 'get', actual, 'corner'), 'tt')
+        self.assertEqual(int(self.t.call('dict', 'get', actual, 'temp_c')), 27)

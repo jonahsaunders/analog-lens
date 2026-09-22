@@ -68,7 +68,7 @@ proc ::analog_lens::capture_result_metadata {} {
         if {[get $next $key] ne [get $result_metadata $key]} {set same 0}
     }
     if {$same} {
-        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context design_stamp source dependencies dependency_hash dependency_warnings observed_conditions verification} {
+        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context design_stamp source dependencies dependency_hash dependency_warnings observed_conditions verification conditions_source} {
             if {[dict exists $result_metadata $key]} {dict set next $key [dict get $result_metadata $key]}
         }
     }
@@ -97,7 +97,7 @@ proc ::analog_lens::apply_conditions {} {
         dict set next $key $value
     }
     set declared $next
-    if {$result_metadata ne {}} {set result_metadata [dict merge $result_metadata $declared]}
+    if {$result_metadata ne {}} {set result_metadata [recorded_conditions [dict merge $result_metadata $declared]]}
     set conditions_message {Conditions recorded as user-declared metadata. Simulation settings are unchanged.}
     render_compare; schedule_plot
 }

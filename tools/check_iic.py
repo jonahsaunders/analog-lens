@@ -105,8 +105,38 @@ def main():
                     actual = float(tcl.call('dict', 'get', computed, key))
                     if not math.isclose(actual, expected_value, rel_tol=1e-9, abs_tol=1e-15):
                         raise ValueError(f'Extension disagrees with ngspice-derived {key}: {actual} vs {expected_value}')
+                geometry = []
+                # Verify multiplicity on the actual installed models, for both
+                # polarities: two copies of the same two-finger device must
+                # double current and small-signal gm. Do not assume that a
+                # wrapper's m/mult property has the intended effect.
+                reference = None
+                for copies in (1, 2):
+                    folded = re.sub(r'\b(?:nf|ng)=1\b', 'ng=2' if psp else 'nf=2', instance)
+                    key = 'mult' if pdk.startswith('sky') else 'm'
+                    folded = re.sub(r'\b'+key+r'=1\b', key+'='+str(copies), folded)
+                    if pdk.startswith('sky'):
+                        folded = re.sub(r'\bm=1\b', 'm='+str(copies), folded)
+                    geometry_deck = out/f'{tag}-fingers2-copies{copies}.spice'
+                    geometry_raw = geometry_deck.with_suffix('.raw')
+                    geometry_deck.write_text(deck.read_text().replace(instance, folded).replace(raw.name, geometry_raw.name))
+                    run = subprocess.run([binary, '-b', str(geometry_deck)], cwd=out, env=env,
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=args.timeout)
+                    geometry_deck.with_suffix('.log').write_text(run.stdout)
+                    if run.returncode or not geometry_raw.is_file():
+                        raise ValueError('Multifinger/multiplicity simulation failed; inspect geometry logs.')
+                    measured = parse_ascii_op(geometry_raw.read_text())
+                    pair = {param: measured[path+'['+param+']'] for param in (current, 'gm')}
+                    if reference is None:
+                        reference = pair
+                    else:
+                        for param in pair:
+                            if not math.isclose(pair[param], 2*reference[param], rel_tol=1e-6, abs_tol=1e-15):
+                                raise ValueError(f'{key}=2 did not double {param} for the installed two-finger model.')
+                    geometry.append(dict(fingers=2, copies=copies, measured=pair,
+                                         deck_sha256=hashlib.sha256(geometry_deck.read_bytes()).hexdigest()))
                 results.append(dict(pdk=pdk,device=polarity+'mos',status='passed',metrics=expected_metrics,
-                                    raw=str(raw),deck_sha256=hashlib.sha256(deck.read_bytes()).hexdigest()))
+                                    raw=str(raw),deck_sha256=hashlib.sha256(deck.read_bytes()).hexdigest(), geometry=geometry))
             except (OSError,ValueError,subprocess.TimeoutExpired,tkinter.TclError) as exc:
                 results.append(dict(pdk=pdk,device=polarity+'mos',status='failed',error=str(exc)))
     report=out/'report.json';report.write_text(json.dumps(results,indent=2)+'\n')
