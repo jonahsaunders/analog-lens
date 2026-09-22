@@ -1,6 +1,6 @@
 # GUI audit and upgrade
 
-Date: 2026-09-22 · Version: 0.2.0
+Date: 2026-09-22 · Original audit: 0.2.0 · Current follow-up: 0.3.0
 
 ## Scope and interpretation
 
@@ -9,7 +9,7 @@ chart, lookup-data dialog, run-log dialog, file choosers, warning alerts,
 keyboard navigation, and loading/empty/error/busy states. The review used
 Apple's current Human Interface Guidelines, with emphasis on desktop use.
 
-Analog Lens is a cross-platform Tcl/Tk extension inside xschem. The changes
+Analog Lens is a Tcl/Tk extension inside xschem, targeting IIC-OSIC-TOOLS on Linux/X11. The changes
 apply HIG principles to native Tk controls; they do not turn the extension
 into an AppKit application or establish full Apple accessibility compliance.
 No Apple artwork, platform-only materials, or global replacement theme is used.
@@ -24,7 +24,7 @@ or prevent an interaction; **Medium** causes confusion or unnecessary effort.
 | Typography | Medium | Font tuples treated Tk font names as font families, losing the actual system font. | Named fonts derive from `TkDefaultFont` and `TkFixedFont`; row heights use font metrics. | [Typography][type] |
 | Appearance | Medium | Fixed light backgrounds and text colors could conflict with a dark host theme. | App styles derive the background, foreground, and content surface from ttk; supporting text and chart colors have light/dark variants. The host theme is preserved. | [Color][color] |
 | Toolbar | Medium | The main action had the same emphasis as utility actions and used a decorative play glyph. | Clear **Run operating point** label, primary emphasis, content-sized buttons, and wrapping at reduced width. | [Buttons][buttons], [Toolbars][toolbar] |
-| Navigation | High | Common actions lacked local keyboard shortcuts and documented traversal. | Command/Ctrl shortcuts, notebook traversal, keyboard sorting, Return actions, and searchable-device focus. Bindings stay in the extension window. | [Keyboards][keys] |
+| Navigation | High | Common actions lacked local keyboard shortcuts and documented traversal. | Ctrl shortcuts, notebook traversal, keyboard sorting, Return actions, and searchable-device focus. Bindings stay in the extension window. | [Keyboards][keys] |
 | xschem menu | Medium | Several important views/actions were reachable only after opening the window. | Menu entries for all analysis tabs and utility actions; actions share toolbar availability checks. Ellipses remain on file-selection actions. | [Buttons][buttons] |
 | Inspector | High | Long metrics and explanatory text were clipped without a scrollbar. | Scrollable, selectable monospace text; copy details; pane bounds protect action labels. | [Layout][layout], [Accessibility][access] |
 | Device table | Medium | Numeric columns were not aligned; sorting was ascending-only and lost on refresh. | Right-aligned values, header direction indicators, ascending/descending sorting retained across refresh, missing values last, preserved selection. | [Lists and tables][tables] |
@@ -37,7 +37,7 @@ or prevent an interaction; **Medium** causes confusion or unnecessary effort.
 | Comparison | High | No baseline or a different hierarchy produced an unexplained blank table. | Explicit baseline/mismatch/no-match messages, signed percentage changes, both scrollbars, and a copyable comparison. | [Lists and tables][tables] |
 | Setup and help | High | The editable settings followed a large, unscrollable block of reference text. | Targets and validation are grouped first; reference text and keyboard help have a visible scrollbar. | [Layout][layout] |
 | Run log | Medium | Opening the log destroyed the previous window, and output was a static snapshot. | Reused transient window, live append, optional tail following, copy/close controls, and preserved reading position when scrolled back. | [Progress indicators][progress] |
-| Secondary windows | High | Dialog actions could be squeezed below the visible area at small sizes. | Actions reserve space before expanding tables/text; custom dialogs support Close/Escape and Command/Ctrl+W. File choosers belong to the analysis window. | [Layout][layout] |
+| Secondary windows | High | Dialog actions could be squeezed below the visible area at small sizes. | Actions reserve space before expanding tables/text; custom dialogs support Close/Escape and Ctrl+W. File choosers belong to the analysis window. | [Layout][layout] |
 | Window lifecycle | Medium | Lookup selectors could lose their option lists after closing and reopening. | Restore slice/length choices and retain one set of callback traces per window. | [Layout][layout] |
 
 ## Verification
@@ -109,7 +109,7 @@ Implemented after the original audit:
 | Area | Boundary / follow-up |
 |---|---|
 | macOS Aqua and VoiceOver | Outside the IIC-only target scope. |
-| Live xschem and PDKs | An automated IIC integration harness now exercises these workflows. Consult its run report for actual validation results. |
+| Live xschem and PDKs | Passed eight real device simulations and four xschem workflows in IIC 2026.08; exact models and evidence are in [VALIDATION.md](../VALIDATION.md). |
 | Host theme/font changes | Colors and fonts derive from the active IIC Tk theme when the window opens. Reopen the window after changing those settings. |
 | Localization | English labels and units were reviewed. Translations and right-to-left layout have not been implemented or tested. |
 | Very long runs | v0.3 adds cancellation and elapsed time for Linux processes. Progress remains indeterminate. Closing the window lets the run continue. |

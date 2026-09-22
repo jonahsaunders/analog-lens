@@ -1,0 +1,271 @@
+{
+  "date_utc": "2026-09-22",
+  "extension_version": "0.3.0",
+  "code_commit": "05f01b4c1b117874eccc09a4fd3275f1d87614a1",
+  "workflow_run": "https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544",
+  "workflow_artifact_id": 10693714709,
+  "image": {
+    "tag": "hpretl/iic-osic-tools:2026.08",
+    "repo_digests": [
+      "hpretl/iic-osic-tools@sha256:3c371645b19c6f6564dc8c7b21e39ad1c1833d274fe5b85639afe1ba9d7987e7"
+    ],
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "versions": {
+    "iic": "2026.08",
+    "xschem": "XSCHEM V3.4.8RC",
+    "ngspice": "47",
+    "tk": "8.6.14"
+  },
+  "native_tests": {
+    "passed": 65,
+    "skipped": 0
+  },
+  "direct_metrics_relative_tolerance": 1e-09,
+  "checks": [
+    {
+      "name": "native-suite",
+      "status": "passed"
+    },
+    {
+      "name": "ngspice-pdk-metrics",
+      "status": "passed"
+    },
+    {
+      "name": "sky130A-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 5.811827030743899e-08,
+          "relative_errors": {
+            "gm_S": 5.2645719561539295e-08,
+            "gds_S": 5.513297240966608e-08,
+            "id_A": 5.472551078966603e-09,
+            "gmid_1_V": 5.811827030743899e-08,
+            "intrinsic_gain": 2.4872528481267864e-09
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 5.811827030743899e-08,
+          "relative_errors": {
+            "gm_S": 5.2645719561539295e-08,
+            "gds_S": 5.513297240966608e-08,
+            "id_A": 5.472551078966603e-09,
+            "gmid_1_V": 5.811827030743899e-08,
+            "intrinsic_gain": 2.4872528481267864e-09
+          }
+        }
+      ]
+    },
+    {
+      "name": "gf180mcuD-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.6104159472618562e-07,
+          "relative_errors": {
+            "gm_S": 2.5352122401400834e-08,
+            "gds_S": 1.3568949430720068e-07,
+            "id_A": 9.676541767866809e-08,
+            "gmid_1_V": 7.141330238269461e-08,
+            "intrinsic_gain": 1.6104159472618562e-07
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.6104159472618562e-07,
+          "relative_errors": {
+            "gm_S": 2.5352122401400834e-08,
+            "gds_S": 1.3568949430720068e-07,
+            "id_A": 9.676541767866809e-08,
+            "gmid_1_V": 7.141330238269461e-08,
+            "intrinsic_gain": 1.6104159472618562e-07
+          }
+        }
+      ]
+    },
+    {
+      "name": "ihp-sg13g2-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        }
+      ]
+    },
+    {
+      "name": "ihp-sg13cmos5l-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        }
+      ]
+    }
+  ],
+  "device_simulations": [
+    {
+      "pdk": "sky130A",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 6.1962174517665645,
+        "gain": 66.10378169428854,
+        "ro": 47046.103213121925,
+        "headroom": 0.6757458521617568,
+        "ft": 7915870096.807907
+      },
+      "deck_sha256": "7dd7c0a88e6ca68561526edb0b1eadbc59dc809da6d9b5c3bedf839421ac263a",
+      "raw_sha256": "fc8e1150754fc49c2e3313f877cf3a2c4113c6bb121d64bc0581e839f271c025"
+    },
+    {
+      "pdk": "sky130A",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 17.31112054887043,
+        "gain": 149.45294123077076,
+        "ro": 13398803.090171648,
+        "headroom": 0.8446072665032421,
+        "ft": 100019638.81153898
+      },
+      "deck_sha256": "902c5073d9277faf0f1454a2d60bb274b19c98354b04c9462207f960be66e9e5",
+      "raw_sha256": "093e520119300f2fa7bd49857c793738fa4951ba89a8720381a7c2345eb2b209"
+    },
+    {
+      "pdk": "gf180mcuD",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 1.3654748027187265,
+        "gain": 80.81953782126658,
+        "ro": 57873.5730370592,
+        "headroom": 1.0047513986919556,
+        "ft": 12240978499.493038
+      },
+      "deck_sha256": "6608c366dc66d8aac5f1ed9e2e86cdf00131b47425e2cbc5fc23fb25d17344a6",
+      "raw_sha256": "c2c6fc2bd66a5a83127da0d6e200c0c85a9e0f07c54cc8c881ec053836a66d2d"
+    },
+    {
+      "pdk": "gf180mcuD",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 1.7201003058965445,
+        "gain": 67.59874368270864,
+        "ro": 151428.428699959,
+        "headroom": 0.9847900285119873,
+        "ft": 3540108327.702302
+      },
+      "deck_sha256": "47d8b250fef794cc49a647e16d87e5a04abf0834c525339c3cafc0a95ac5432f",
+      "raw_sha256": "dbf77d0e78d9e4c4fa00214388834162e65cf2d84ff5cd1a5ef58314129ee8c0"
+    },
+    {
+      "pdk": "ihp-sg13g2",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 2.811140839776347,
+        "gain": 22.48176354367806,
+        "ro": 5947.905798885675,
+        "headroom": 0.4030032531587178,
+        "ft": 11816919046.017904
+      },
+      "deck_sha256": "191a61ac31423bba18d4aca4cfc795fd4f462e7d8de4227f0eee7c23f225c9c9",
+      "raw_sha256": "6e3cb9b059f5dc021e83134d9a65fd6e22dd5f90a4354a32f5a67765764daf3f"
+    },
+    {
+      "pdk": "ihp-sg13g2",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 3.520385072829937,
+        "gain": 55.65345245774611,
+        "ro": 71555.05283792625,
+        "headroom": 0.47194531193539724,
+        "ft": 2548921652.587919
+      },
+      "deck_sha256": "dde9c1d480917d3073f21a3c9dd5fa9eb91c6d6745a4bad5fb439c6de4f94146",
+      "raw_sha256": "20c7bb4259f360b9cb9beaefbab3ea3bb6af61c40830e52d282ba098927cccc7"
+    },
+    {
+      "pdk": "ihp-sg13cmos5l",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 2.811140839776347,
+        "gain": 22.48176354367806,
+        "ro": 5947.905798885675,
+        "headroom": 0.4030032531587178,
+        "ft": 11816919046.017904
+      },
+      "deck_sha256": "7fde81bc6db4a399453f219144afe1c0980838dec29397150c88ba4763de52a2",
+      "raw_sha256": "f1b5e98378474155fef9d32d90ed649260cc9aeea87388d784d182d8113a78a0"
+    },
+    {
+      "pdk": "ihp-sg13cmos5l",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 3.520385072829937,
+        "gain": 55.65345245774611,
+        "ro": 71555.05283792625,
+        "headroom": 0.47194531193539724,
+        "ft": 2548921652.587919
+      },
+      "deck_sha256": "eb0eca39078f57077e90f57f9eb4172787f010c5936f92db509553dbc73589d6",
+      "raw_sha256": "d05c28a7a558f0250805223e6d3d2252a7c273af93ef78bc409dfe7f83b94179"
+    }
+  ],
+  "scope": "Nominal-corner NMOS/PMOS model pairs listed in VALIDATION.md; live xschem workflows use NMOS at top level and inside x1. This is not qualification of every model variant or container revision."
+}

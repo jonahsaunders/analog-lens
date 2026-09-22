@@ -21,17 +21,38 @@ The required runner rejects missing displays and skipped tests. An ordinary head
 
 ## Real IIC integration
 
-The development workspace has no Docker/Podman, xschem, ngspice, or installed PDKs. Its attempted integration run correctly reports missing prerequisites; no local PDK success is claimed.
+Validated with **IIC-OSIC-TOOLS 2026.08** in the [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544), using code commit [`05f01b4`](https://github.com/jonahsaunders/analog-lens/commit/05f01b4c1b117874eccc09a4fd3275f1d87614a1).
 
-The repository now provides an executable integration harness and a GitHub Actions job:
+- Container: `hpretl/iic-osic-tools:2026.08`, Linux/amd64.
+- Tools: xschem 3.4.8RC, ngspice 47, Tcl/Tk 8.6.14.
+- Resolved digest: `sha256:3c371645b19c6f6564dc8c7b21e39ad1c1833d274fe5b85639afe1ba9d7987e7`.
+- 65 native/contract tests passed in the container, without skips.
+- Eight real NMOS/PMOS simulations passed; extension calculations agree with independently derived raw-data metrics.
+- Four real xschem GUI integrations passed, including top-level and hierarchical results, cross-probing, highlighting, annotation placement, and session saving.
+- All eight top-level/child exports passed comparison with their own raw simulator files.
 
-- [IIC integration runs](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml)
-- `tools/validate_iic.py`: native tests, real PDK simulations, and real xschem GUI workflows.
-- `tools/check_iic.py`: NMOS/PMOS checks for SKY130A, GF180MCU-D, SG13G2, and SG13CMOS5L; extension metrics are compared with independently computed simulator values.
-- `tests/iic_live.tcl`: top-level/hierarchical runs, raw-result loading, cross-probing, highlighting, annotation placement, and saving a session inside xschem.
-- `tools/run_iic_container.sh`: runs the harness in a tagged IIC image and records its resolved image information.
+| Installed PDK | Tested NMOS / PMOS | Real simulation | xschem workflow |
+|---|---|---|---|
+| `sky130A` | `nfet_01v8` / `pfet_01v8` | Passed | Passed |
+| `gf180mcuD` | `nfet_03v3` / `pfet_03v3` | Passed | Passed |
+| `ihp-sg13g2` | `sg13_lv_nmos` / `sg13_lv_pmos` | Passed | Passed |
+| `ihp-sg13cmos5l` | `sg13_lv_nmos` / `sg13_lv_pmos` | Passed | Passed |
 
-Each run saves generated schematics/decks, raw files, exports, logs, and JSON results. `--require-all` treats missing PDKs as failure. **A workflow definition is not evidence of a passing integration run; use its artifact report for the actual outcome and tested image.**
+The persistent [machine-readable validation summary](docs/validation/iic-2026.08.json) records versions, measured errors, deck hashes, and results. The workflow artifact retains generated schematics/decks, raw files, exports, and full logs. PDK files are not redistributed.
+
+The direct calculation check uses a relative tolerance of `1e-9`. The xschem export check uses `1e-6` (one part per million), with no absolute tolerance: its ASCII reader uses floating-point `my_atof()`, and its `raw value` API returns eight significant digits through `dtoa()`. Ratios accumulate those conversion errors. The largest measured relative error was `1.84e-7` (0.184 ppm). See upstream [ASCII reader](https://github.com/StefanSchippers/xschem/blob/ddc734480d5326fb787993dad24f4062e5d28434/src/save.c) and [number conversion](https://github.com/StefanSchippers/xschem/blob/ddc734480d5326fb787993dad24f4062e5d28434/src/editprop.c). An archived-run regression check accepted all eight actual exports and rejected all eight after a deliberately introduced 10 ppm gm error.
+
+The integration run also exposed and fixed an ngspice 47 filename issue: `write` treats double quotes as part of its output filename. Generated analysis files now use a safe unquoted basename in the simulation directory; paths containing spaces are covered by the asynchronous-run regression test.
+
+### Reproduce
+
+Run `bash tools/run_iic_container.sh` on a Docker host, or run this inside the IIC environment:
+
+```sh
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/validate_iic.py --require-all
+```
+
+`--require-all` treats missing PDKs as failure. `tools/check_iic.py` provides the standalone NMOS/PMOS checks, and `tests/iic_live.tcl` drives the actual xschem workflows. Reports are generated for each run. The native [GUI workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/tests.yml) also checks the Tk smoke test and captures the interface.
 
 ## Scope and limitations
 

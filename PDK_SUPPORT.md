@@ -15,25 +15,26 @@ Bipolar adapters additionally recognize SKY130 `qsky130_fd_pr__<model>`, GF180 `
 
 Support means the MOS adapter and GUI workflow are implemented. **It does not mean every voltage option, device family, container tag, or installed PDK revision has been validated.** Model names and nested wrappers can change. Missing vectors remain visible as missing, with diagnostics, instead of fabricated results.
 
-## Validation performed during development
+## Validated in IIC-OSIC-TOOLS 2026.08
 
-- Tcl source loading and numerical calculations.
-- Fixture-based path resolution for all four PDK targets and compatibility aliases.
-- PMOS polarity, low-current guards, zero/nonpositive conductance, missing values, and IHP overlap handling.
-- CSV import/export, unit/metadata checks, interpolation boundaries, and sizing math.
-- xschem API contract fixtures, selection restoration, and hierarchy restoration after failure.
-- Installer preservation and idempotence checks.
-- A real asynchronous subprocess/fileevent check using a fake simulator executable and xschem API fixture (not a real ngspice run).
-- Native GUI Tcl procedures exercised against mock widget commands; this verifies command flow, not rendering or actual Tk option behavior.
+The [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544) exercised installed vendor models and symbols:
 
-## Validation still required in IIC-OSIC-TOOLS
+| PDK | NMOS / PMOS model pair | Tested behavior |
+|---|---|---|
+| SKY130A | `nfet_01v8` / `pfet_01v8` | Real OP metrics for both polarities; NMOS top-level and hierarchical GUI workflows |
+| GF180MCU-D | `nfet_03v3` / `pfet_03v3` | Same |
+| IHP SG13G2 | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
+| IHP SG13CMOS5L | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
 
-- Run `tools/check_iic.py` against the actual installed model versions.
-- Run `tests/gui_smoke.tcl` with real Tk/X11, then inspect the window in xschem.
-- Exercise the extension on a real top-level testbench for each PDK, including hierarchy and saved parameter names.
-- Verify the particular device variants used in your design, and compare against ngspice output and existing PDK annotations.
+All eight simulator checks and four live xschem integrations passed. GUI checks included results loading, hierarchy, cross-probing, highlighting, annotation placement, session saving, and exported metrics compared with raw data. The container also passed all 65 automated tests without skips. See [VALIDATION.md](VALIDATION.md) for the image digest, numerical tolerances, source commit, and retained evidence.
 
-The build environment did not contain xschem, ngspice, an X server, or the installed PDKs. Integration and visual validation are therefore explicitly unverified.
+Fixture and native tests additionally cover numerical guards, adapter naming, ambiguous wrappers, CSV/LUT validation, sizing math, hierarchy recovery, installer preservation, keyboard/layout behavior, comparisons, sessions, provenance, and Linux cancellation. These checks complement the real PDK simulations.
+
+## Coverage boundaries
+
+The real tests use nominal MOS corners and the model pairs above. Other voltage options, corners, temperatures, device geometries, BJT/RF/composite families, and other container/PDK revisions need validation before relying on them. Bipolar support currently has adapter/fixture coverage, not the real-device qualification above. PMOS metrics are tested in ngspice; the automated xschem placement/hierarchy testbench uses NMOS.
+
+Check your own design in the IIC VNC/X11 desktop and compare its particular model variants against ngspice output and the PDK's annotations. Automated GUI checks cannot establish usability for every project, theme, or screen setup.
 
 ## Primary references
 
@@ -52,4 +53,4 @@ No foundry models, PDK files, proprietary data, or third-party lookup tables are
 
 Run `xvfb-run -a python3 tools/validate_iic.py --require-all` inside IIC-OSIC-TOOLS, or `bash tools/run_iic_container.sh` from a Docker host. The harness uses installed vendor symbols/models, checks NMOS and PMOS metrics, and exercises actual xschem hierarchy, highlighting, cross-probing and annotation workflows. It saves logs and raw results and fails if any required PDK is absent or fails.
 
-See the [validation record](VALIDATION.md) and [integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) for the tested environment and results. The presence of the harness does not itself establish that a PDK/image passed.
+See the [validation record](VALIDATION.md) and [integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) for the tested environment and results. Results apply to the exact image and device coverage recorded there.

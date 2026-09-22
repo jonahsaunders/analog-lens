@@ -6,7 +6,7 @@ Version **0.3.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC des
 
 This release adds named baselines and saved sessions, safe simulation cancellation, environment diagnostics, richer comparisons, lookup filters, chart inspection/zoom/SVG export, and recorded result conditions. The interface retains the usability principles from the [GUI audit](docs/GUI_AUDIT.md).
 
-**Validation:** 65 local tests and the native Tk smoke test pass on Linux/Tk 8.6. The new [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) runs actual xschem and ngspice against installed PDKs; consult its report for the tested image and results. Local fixtures and screenshots do not establish PDK validation. See [VALIDATION.md](VALIDATION.md) and [PDK_SUPPORT.md](PDK_SUPPORT.md).
+**Validation:** 65 tests and the native Tk smoke test pass. [Real IIC-OSIC-TOOLS 2026.08 validation](https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544) passed eight NMOS/PMOS simulations and four xschem GUI workflows across SKY130A, GF180MCU-D, SG13G2, and SG13CMOS5L. See [VALIDATION.md](VALIDATION.md) and [PDK_SUPPORT.md](PDK_SUPPORT.md) for exact coverage. Screenshots use synthetic data.
 
 ## Interface preview
 
@@ -73,7 +73,7 @@ The device list is scoped to the currently open hierarchy level. To see transist
 
 ### Save work and compare runs
 
-Enter a name in **Compare runs**, then click **Keep baseline**. Each baseline retains its device results, hierarchy, and provenance; duplicate names receive a suffix. Choose an earlier baseline from the selector. Comparisons show matched, added, and removed devices, with gm/Id, gain, current, headroom, and estimated fT values and changes. **Export comparison…** includes unrounded values and metadata.
+Enter a name in **Compare runs**, then click **Keep baseline**. Each baseline retains its device results, hierarchy, and provenance; duplicate names receive a suffix. Choose an earlier baseline from the selector. Comparisons show matched, added, and removed devices, with gm/Id, gain, current, headroom, and estimated fT values and changes. **Export comparison…** includes stored numeric values and metadata, without the table's display rounding. Source precision is limited by xschem's raw-data reader and numeric API.
 
 Use **Session → Save session…** to save an `.alsession` file in your mounted designs directory. It stores named baselines, targets, lookup-file selection, sizing inputs, sorting, and window/pane size. **Open session…** restores it. Load or run current results separately. Lookup data is referenced by path; if that file has moved, load it again. Session files are parsed as data, never executed. Changes are saved explicitly; closing xschem does not autosave them.
 
