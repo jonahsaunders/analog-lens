@@ -9,6 +9,7 @@ import tkinter
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+TEST_TMP_ROOT = Path(os.environ.get("ANALOG_LENS_TEST_TMP", str(ROOT.parent)))
 
 
 class Workflow(unittest.TestCase):
@@ -40,7 +41,7 @@ class Workflow(unittest.TestCase):
         name = '[set ::injected 1]; $HOME'
         self.set('baseline_name', name)
         self.call('keep_baseline')
-        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
+        with tempfile.TemporaryDirectory(dir=TEST_TMP_ROOT) as temp:
             path = Path(temp) / 'saved.alsession'
             self.call('save_session', str(path))
             self.set('baselines', '')
@@ -53,7 +54,7 @@ class Workflow(unittest.TestCase):
             self.assertEqual(list(Path(temp).glob('*.tmp')), [])
 
     def test_corrupt_session_does_not_change_existing_state(self):
-        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
+        with tempfile.TemporaryDirectory(dir=TEST_TMP_ROOT) as temp:
             path = Path(temp) / 'saved.alsession'
             self.call('save_session', str(path))
             self.t.setvar('data', path.read_text())
@@ -93,7 +94,7 @@ class Workflow(unittest.TestCase):
         self.assertEqual(differences, ('Corner: tt → ss',))
 
     def test_raw_sidecar_restores_conditions_and_rejects_stale_file(self):
-        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
+        with tempfile.TemporaryDirectory(dir=TEST_TMP_ROOT) as temp:
             raw = Path(temp) / 'saved.raw'
             raw.write_text('fixture data')
             metadata = self.call('capture_metadata')
@@ -108,7 +109,7 @@ class Workflow(unittest.TestCase):
             self.assertEqual(str(self.get('result_metadata')), '')
 
     def test_linux_cancel_escalates_and_keeps_previous_results(self):
-        with tempfile.TemporaryDirectory(dir=ROOT) as temp:
+        with tempfile.TemporaryDirectory(dir=TEST_TMP_ROOT) as temp:
             directory = Path(temp)
             exe = directory / 'ngspice'
             exe.write_text('#!' + sys.executable + '\nimport signal,time\nsignal.signal(signal.SIGTERM, signal.SIG_IGN)\nprint("ready",flush=True)\ntime.sleep(30)\n')

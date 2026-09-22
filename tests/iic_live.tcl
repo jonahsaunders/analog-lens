@@ -1,5 +1,9 @@
 # Actual xschem/PDK integration. Invoked by tools/validate_iic.py, never by mocks.
-proc fail {message} {puts stderr "LIVE CHECK FAILED: $message"; exit 1}
+proc fail {message} {
+    puts stderr "LIVE CHECK FAILED: $message"
+    if {[info exists ::analog_lens::run_log]} {puts stderr $::analog_lens::run_log}
+    exit 1
+}
 proc require {condition message} {if {![uplevel 1 [list expr $condition]]} {fail $message}}
 proc bgerror {message} {fail "$message\n$::errorInfo"}
 set no_ask_quit 1

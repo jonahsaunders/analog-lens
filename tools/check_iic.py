@@ -78,11 +78,11 @@ def main():
             if psp:params+=['cgsol','cgdol']
             saves='\n'.join('.save '+path+'['+param+']' for param in params)
             vds=-vd if polarity=='p' else vd
-            deck.write_text(f'Analog Lens {tag} parameter check\n{includes}\nvg g 0 {vg}\nvd d 0 {vds}\n{instance}\n.save all\n{saves}\n.control\nset filetype=ascii\nop\nwrite "{raw}"\nquit\n.endc\n.end\n')
+            deck.write_text(f'Analog Lens {tag} parameter check\n{includes}\nvg g 0 {vg}\nvd d 0 {vds}\n{instance}\n.save all\n{saves}\n.control\nset filetype=ascii\nop\nwrite {raw.name}\nquit\n.endc\n.end\n')
             env=dict(os.environ,PDK=pdk,PDKPATH=str(base),SPICE_USERINIT_DIR=str(base/'libs.tech/ngspice'))
             # Preserve the installation's own init files and OSDI paths.
             try:
-                proc=subprocess.run([binary,'-b',str(deck)],cwd=base/'libs.tech/ngspice',env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=args.timeout)
+                proc=subprocess.run([binary,'-b',str(deck)],cwd=out,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=args.timeout)
                 (out/(tag+'.log')).write_text(proc.stdout)
                 if proc.returncode or not raw.is_file():raise ValueError('Simulation failed; inspect the log.')
                 values=parse_ascii_op(raw.read_text())

@@ -164,8 +164,11 @@ proc ::analog_lens::op_deck {original saves rawfile} {
         append out $line \n
     }
     if {$control || $subckt} {error "Unbalanced .control or .subckt in generated netlist."}
-    if {[regexp {["\n\r]} $rawfile]} {error "Simulation path cannot contain quotes or newlines."}
-    append out "\n* Analog Lens isolated operating-point analysis\n$saves\n.control\nset filetype=ascii\nop\nwrite \"$rawfile\"\nquit\n.endc\n.end\n"
+    # ngspice's write command retains literal quotes around a filename. The
+    # subprocess runs in the output directory, so use a safe relative basename.
+    set rawname [file tail $rawfile]
+    if {![regexp {^[A-Za-z0-9_.-]+$} $rawname]} {error "Use a simple alphanumeric results basename."}
+    append out "\n* Analog Lens isolated operating-point analysis\n$saves\n.control\nset filetype=ascii\nop\nwrite $rawname\nquit\n.endc\n.end\n"
     return $out
 }
 proc ::analog_lens::run_op {} {
@@ -184,7 +187,8 @@ proc ::analog_lens::run_op {} {
     set directory [file normalize $::netlist_dir]
     file mkdir $directory
     # Every run gets new files, so a failed run cannot load stale results.
-    set stem "[file rootname [file tail [xschem get current_name]]].analog-lens-[clock milliseconds]"
+    set base [regsub -all {[^A-Za-z0-9_.-]} [file rootname [file tail [xschem get current_name]]] _]
+    set stem "analog-lens-[clock milliseconds]-$base"
     set original [file join $directory ${stem}-source.spice]
     set deck [file join $directory ${stem}.spice]
     set run_file [file join $directory ${stem}.raw]

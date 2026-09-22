@@ -54,7 +54,9 @@ def make_testbench(pdk, base, out):
     symbol = candidates[0]
     pins = symbol_pins(symbol)
     width, length = ('10', '0.5') if pdk.startswith('sky') else ('10u', '0.6u' if pdk.startswith('gf') else '0.5u')
-    mos = f'C {{{symbol}}} 0 0 0 0 {{name=M1 model={model} W={width} L={length} w={width} l={length} nf=1 ng=1 mult=1 m=1 spiceprefix=X}}\n'
+    # SKY130 vendor symbols supply the sky130_fd_pr__ prefix in their format.
+    symbol_model = model.split('__', 1)[1] if pdk.startswith('sky') else model
+    mos = f'C {{{symbol}}} 0 0 0 0 {{name=M1 model={symbol_model} W={width} L={length} w={width} l={length} nf=1 ng=1 mult=1 m=1 spiceprefix=X}}\n'
     child = HEADER + mos + labels(pins)
     for index, pin in enumerate(('d', 'g', 's', 'b')):
         child += f'C {{devices/iopin.sym}} -200 {index*40} 0 0 {{name=p{index} lab={pin}}}\n'
