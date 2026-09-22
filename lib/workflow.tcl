@@ -64,11 +64,11 @@ proc ::analog_lens::capture_metadata {} {
 proc ::analog_lens::capture_result_metadata {} {
     variable result_metadata
     set next [capture_metadata]; set same [expr {$result_metadata ne {}}]
-    foreach key {raw analysis sample dataset} {
+    foreach key {raw analysis} {
         if {[get $next $key] ne [get $result_metadata $key]} {set same 0}
     }
     if {$same} {
-        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context} {
+        foreach key {pdk corner temp_c vds_v vsb_v captured_at schematic input_deck input_crc32 run_context design_stamp source} {
             if {[dict exists $result_metadata $key]} {dict set next $key [dict get $result_metadata $key]}
         }
     }

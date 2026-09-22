@@ -29,7 +29,9 @@ proc ::analog_lens::install_menu {} {
     set bar [xschem get top_path].menubar
     if {![winfo exists $bar] || [winfo exists $bar.analog_lens]} {return}
     set m $bar.analog_lens; menu $m -tearoff 0
-    $m add command -label {Open Analog Lens} -command ::analog_lens::show
+    $m add command -label {Show inspector sidebar} -command {::analog_lens::sidebar_action ::analog_lens::show_sidebar}
+    $m add command -label {Open analysis window} -command ::analog_lens::show
+    $m add command -label {Run testbench} -command {::analog_lens::sidebar_action ::analog_lens::run_testbench}
     $m add command -label {Inspect selected transistor} -command {::analog_lens::show; ::analog_lens::follow_selection}
     $m add separator
     foreach {name title} {run {Run operating point} load {Load results…} refresh {Refresh results} export {Export CSV…} log {Run log}} {
@@ -43,7 +45,10 @@ proc ::analog_lens::install_menu {} {
     $m add command -label {Open session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog open}}
     $m add command -label {Save session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog save}}
     $m add command -label {Check environment} -command {::analog_lens::show; ::analog_lens::check_environment}
+    $m add command -label {Project settings…} -command ::analog_lens::project_settings
+    $m add command -label {Characterize selected model…} -command {::analog_lens::sidebar_action ::analog_lens::characterize_dialog}
     $bar add cascade -label {Analog Lens} -menu $m
+    after idle ::analog_lens::start_integration
 }
 proc ::analog_lens::active_pdk {} {
     if {[info exists ::env(PDK)]} {return $::env(PDK)}
@@ -78,6 +83,8 @@ proc ::analog_lens::show {} {
     $root.tools.session.menu add command -label {Save session…} -command {::analog_lens::safe {::analog_lens::session_dialog save}}
     $root.tools.session.menu add separator
     $root.tools.session.menu add command -label {Check environment} -command ::analog_lens::check_environment
+    $root.tools.session.menu add command -label {Project integration…} -command ::analog_lens::project_settings
+    $root.tools.session.menu add command -label {Show inspector sidebar} -command {::analog_lens::sidebar_action ::analog_lens::show_sidebar}
     $root.tools.run configure -style AL.Primary.TButton
     layout_toolbar
     ttk::progressbar $root.progress -mode indeterminate -length 160
@@ -87,6 +94,8 @@ proc ::analog_lens::show {} {
     # Reserve feedback before the expanding content so it survives short windows.
     ttk::label $root.status -textvariable ::analog_lens::status -style AL.Muted.TLabel -wraplength 850
     pack $root.status -side bottom -fill x -pady {10 0}; wrapping $root.status
+    ttk::label $root.freshness -textvariable ::analog_lens::freshness -style AL.Muted.TLabel -wraplength 850
+    pack $root.freshness -side bottom -fill x; wrapping $root.freshness
     pack $window.tabs -in $root -fill both -expand 1
     foreach {n title} {op {Operating point} lut {gm/Id explorer} compare {Compare runs} setup {Setup & help}} {
         ttk::frame $window.tabs.$n -style AL.TFrame -padding 12
@@ -116,6 +125,7 @@ proc ::analog_lens::close_window {} {
         trace remove variable ::analog_lens::$var write ::analog_lens::invalidate_sizing
     }
     trace remove variable ::analog_lens::run_log write ::analog_lens::update_log
+    catch {project_flush}
     destroy $window
 }
 
@@ -447,6 +457,7 @@ proc ::analog_lens::build_lut {w} {
     variable colors
     ttk::frame $w.tools -style AL.TFrame; pack $w.tools -fill x -pady {0 8}
     pack [button $w.tools.load {Load lookup CSV…} ::analog_lens::load_lut] -side left -padx {0 12}
+    pack [button $w.tools.characterize {Characterize…} ::analog_lens::characterize_dialog] -side left -padx {0 10}
     pack [label $w.tools.label Curve] -side left -padx {0 8}
     ttk::combobox $w.tools.metric -state readonly -values {{Intrinsic gain} {Estimated fT} {Current density}} \
         -textvariable ::analog_lens::lut_metric_label -width 17
@@ -477,6 +488,8 @@ proc ::analog_lens::build_lut {w} {
     ttk::label $w.error -textvariable ::analog_lens::sizing_error -style AL.Error.TLabel -wraplength 750
     grid $w.result -in $w.size -row 2 -column 0 -columnspan 4 -sticky ew -pady {8 0}; wrapping $w.result
     grid $w.error -in $w.size -row 3 -column 0 -columnspan 4 -sticky ew; wrapping $w.error
+    button $w.size.preview {Preview schematic changes…} ::analog_lens::preview_size
+    grid $w.size.preview -row 4 -column 0 -columnspan 4 -sticky w -pady {6 0}
     ttk::label $w.note -textvariable ::analog_lens::lut_note -style AL.Muted.TLabel -wraplength 750
     pack $w.note -side bottom -fill x -pady {6 0}; wrapping $w.note
     canvas $w.plot -background [dict get $colors field] -highlightthickness 1 \

@@ -77,6 +77,8 @@ def make_testbench(pdk, base, out):
     top = HEADER + mos + labels(pins, ground=True)
     top += f'C {{{out / "al_child.sym"}}} 300 0 0 0 {{name=x1}}\n' + labels(child_pins, 300, ground=True)
     top += f'C {{devices/code_shown.sym}} -300 -250 0 0 {{name=BIAS only_toplevel=false value="{bias}"}}\n'
+    flow = '.control\nset filetype=ascii\nalter vd 0.7\nop\nwrite top.raw\n.endc'
+    top += f'C {{devices/code_shown.sym}} -300 200 0 0 {{name=FLOW only_toplevel=true value="{flow}"}}\n'
     schematic = out / 'top.sch'; schematic.write_text(top)
     rc = out / 'xschemrc'
     pdk_rc = base / 'libs.tech/xschem/xschemrc'
@@ -171,14 +173,29 @@ def main():
             continue
         directory = out/pdk; directory.mkdir()
         try:
+            lookup = None; sweep = None
+            for polarity in ('n', 'p'):
+                _, instance, _, _, _, vd, _ = configuration(pdk, base, polarity)
+                model = instance.split()[5]
+                csv_path = directory/(polarity+'mos-lookup.csv')
+                command = [sys.executable, str(ROOT/'tools/characterize.py'), '--pdk', pdk, '--model', model,
+                           '--pdk-root', str(args.pdk_root), '--lengths', '0.5', '1.0', '--vds', str(vd if polarity=='n' else -vd),
+                           '--vgs-start', '0.2', '--vgs-step', '0.05', '--output', str(csv_path)]
+                code = run_logged(command, directory/(polarity+'mos-characterize.log'), timeout=300)
+                if code or not csv_path.is_file():
+                    raise ValueError(f'{polarity}MOS characterization failed: '+(directory/(polarity+'mos-characterize.log')).read_text()[-2500:])
+                manifest = json.loads(csv_path.with_suffix('.json').read_text())
+                record(pdk+'-'+polarity+'mos-characterization', 'passed', samples=sum(s['samples'] for s in manifest['sweeps']))
+                if polarity == 'n': lookup = csv_path; sweep = manifest['sweeps'][0]['raw']
             schematic, rc = make_testbench(pdk, base, directory)
             env = dict(os.environ, PDK=pdk, PDKPATH=str(base), SPICE_USERINIT_DIR=str(base/'libs.tech/ngspice'),
-                       ANALOG_LENS_ROOT=str(ROOT), ANALOG_LENS_OUTPUT=str(directory))
+                       ANALOG_LENS_ROOT=str(ROOT), ANALOG_LENS_OUTPUT=str(directory),
+                       ANALOG_LENS_LOOKUP=str(lookup), ANALOG_LENS_SWEEP=str(sweep))
             code = run_logged(['xschem', '-r', '-s', '--rcfile', str(rc), '--script', str(ROOT/'tests/iic_live.tcl'), str(schematic)],
-                              directory/'xschem.log', env=env, cwd=directory, timeout=150)
+                              directory/'xschem.log', env=env, cwd=directory, timeout=240)
             if code or not (directory/'passed.txt').is_file():
                 raise ValueError('Live xschem checks failed; inspect xschem.log')
-            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv')]
+            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv')]
             record(pdk+'-xschem', 'passed', comparisons=comparisons)
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
             record(pdk+'-xschem', 'failed', error=str(exc))

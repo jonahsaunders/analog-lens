@@ -78,9 +78,17 @@ proc ::analog_lens::validate_session {data} {
     if {$geometry ne {} && ![regexp {^[0-9]{3,5}x[0-9]{3,5}$} $geometry]} {error "Invalid saved window size."}
     set sash [get $data sash]
     if {$sash ne {} && (![string is integer -strict $sash] || $sash < 0 || $sash > 10000)} {error "Invalid saved pane width."}
+    if {[dict exists $data integration]} {
+        set options [dict get $data integration]
+        foreach key {follow_cursor auto_results device_saves auto_lookup} {
+            if {[get $options $key] ni {0 1}} {error "Invalid integration setting: $key."}
+        }
+        if {[get $options result_analysis] ni {op dc tran}} {error "Invalid project analysis type."}
+        dict get $options result_path
+    }
     return $data
 }
-proc ::analog_lens::save_session {path} {
+proc ::analog_lens::session_data {} {
     variable limits; variable declared; variable baselines; variable baseline_choice; variable lut_file; variable lut_slice
     variable session_path; variable window; variable session_geometry; variable session_sash; variable status
     if {[llength [info commands winfo]] && [winfo exists $window]} {
@@ -94,18 +102,27 @@ proc ::analog_lens::save_session {path} {
     set data [dict create format analog-lens-session schema 1 limits $limits declared $declared baselines $baselines \
         baseline_choice $baseline_choice preferences $prefs geometry $session_geometry sash $session_sash \
         lookup_file $lut_file lookup_slice $lut_slice]
+    if {[info exists ::analog_lens::integration_options]} {dict set data integration $::analog_lens::integration_options}
     validate_session $data
+    return $data
+}
+proc ::analog_lens::save_session {path} {
+    variable session_path; variable status
+    set data [session_data]
     atomic_write $path "$data\n"
     set session_path [file normalize $path]; set status "Session saved: $session_path"
 }
 proc ::analog_lens::open_session {path} {
+    if {$::analog_lens::run_channel ne {}} {error "Finish or cancel the current run before opening a session."}
+    if {[file size $path] > 20000000} {error "Session exceeds the 20 MB limit."}
+    apply_session_data [validate_session [read_text $path]] $path
+}
+proc ::analog_lens::apply_session_data {data path} {
     variable run_channel; variable limits; variable declared; variable baselines; variable baseline_choice; variable session_path
     variable lut_rows; variable lut_slice; variable lut_file; variable status; variable window; variable result_metadata
     variable session_geometry; variable session_sash
-    if {$run_channel ne {}} {error "Finish or cancel the current run before opening a session."}
-    if {[file size $path] > 20000000} {error "Session exceeds the 20 MB limit."}
     # Validate everything, including referenced lookup data, before changing state.
-    set data [validate_session [read_text $path]]
+    validate_session $data
     set lookup [get $data lookup_file]; set rows {}; set warning {}
     if {$lookup ne {}} {
         if {[file pathtype $lookup] eq "relative"} {set lookup [file join [file dirname $path] $lookup]}
@@ -113,12 +130,13 @@ proc ::analog_lens::open_session {path} {
     }
     set limits [dict get $data limits]; set declared [dict get $data declared]
     set baselines [dict get $data baselines]; set baseline_choice [get $data baseline_choice]
+    if {[dict exists $data integration]} {set ::analog_lens::integration_options [dict get $data integration]}
     dict for {key value} [dict get $data preferences] {
         if {$key in {live only_review sizing_visible sort_key sort_desc lut_y lut_length target_gmid target_gm_u target_length}} {set ::analog_lens::$key $value}
     }
     set lut_rows $rows; set lut_file $lookup; set lut_slice [get $data lookup_slice]
     set session_geometry [get $data geometry]; set session_sash [get $data sash]
-    set session_path [file normalize $path]
+    set session_path [expr {$path eq {} ? {} : [file normalize $path]}]
     # Conditions are defaults for the next import/run. Do not relabel loaded results.
     if {[llength [info commands winfo]] && [winfo exists $window]} {
         dict for {key value} $limits {set ::analog_lens::edit_limits($key) $value}

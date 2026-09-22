@@ -93,7 +93,8 @@ proc ::analog_lens::load_results {} {
 }
 proc ::analog_lens::read_results {file type} {
     if {![file isfile $file] || [file size $file] == 0} {error "Results file is missing or empty: $file"}
-    raw read $file $type
+    incr ::analog_lens::integration_internal
+    try {raw read $file $type} finally {incr ::analog_lens::integration_internal -1}
     if {[raw loaded] < 0 || [file normalize [raw rawfile]] ne [file normalize $file] || [raw sim_type] ne $type} {
         error "xschem did not load the requested $type plot. Existing results were not analyzed as new data."
     }
@@ -192,12 +193,13 @@ proc ::analog_lens::run_op {} {
     set original [file join $directory ${stem}-source.spice]
     set deck [file join $directory ${stem}.spice]
     set run_file [file join $directory ${stem}.raw]
-    xschem netlist $original
+    incr ::analog_lens::integration_internal
+    try {xschem netlist $original} finally {incr ::analog_lens::integration_internal -1}
     if {![file isfile $original]} {error "xschem did not generate the analysis netlist."}
     write_text $deck [op_deck [read_text $original] [save_lines $run_devices] $run_file]
     set run_metadata [dict merge [capture_metadata] [dict create analysis op sample 0 dataset 0 \
         run_context $run_context raw [file_signature $run_file] input_deck [file_signature $deck] \
-        input_crc32 [format %08x [zlib crc32 [read_text $deck]]]]]
+        input_crc32 [format %08x [zlib crc32 [read_text $deck]]] design_stamp [design_stamp]]]
     set run_log {}; set run_started [clock seconds]; set run_cancelled 0; set run_processes {}
     set previous [pwd]
     try {
@@ -210,6 +212,7 @@ proc ::analog_lens::run_op {} {
     fileevent $run_channel readable ::analog_lens::run_readable
     set status {Running ngspice operating point… You can keep working in xschem.}
     if {[llength [info commands ::analog_lens::update_run_controls]]} {update_run_controls}
+    catch {update_freshness}
 }
 proc ::analog_lens::run_readable {} {
     variable run_channel; variable run_log; variable run_file; variable run_context; variable status
@@ -272,7 +275,8 @@ proc ::analog_lens::annotation {name} {
     foreach r $records {
         if {[get $r name] eq $name} {
             set v [get $r values]
-            return "gm/Id = [eng [get $v gmid] 1/V]\ngm/gds = [eng [get $v gain]]\nId = [eng [get $v id] A]\nmargin = [eng [get $v headroom] V]"
+            set warning {}; if {[string match {Out of date*} $::analog_lens::freshness]} {set warning "OUT OF DATE\n"}
+            return "${warning}gm/Id = [eng [get $v gmid] 1/V]\ngm/gds = [eng [get $v gain]]\nId = [eng [get $v id] A]\nmargin = [eng [get $v headroom] V]"
         }
     }
     return {Open Analog Lens and refresh}

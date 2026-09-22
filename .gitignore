@@ -3,3 +3,4 @@ build/
 iic-validation/
 iic-checks/
 *.py[cod]
+.analog-lens/
