@@ -118,7 +118,7 @@ proc ::analog_lens::characterization_readable {} {
     if {$::analog_lens::char_cancelled} {set char_state cancelled; set char_status {Cancelled · Previous lookup data retained.}} elseif {$failed || ![file isfile $::analog_lens::char_output]} {
         set char_state failed; set char_status {Characterization failed. See the log below; prior lookup data is unchanged.}
     } elseif {[catch {
-        set rows [parse_lut [read_text $::analog_lens::char_output]]]
+        set rows [parse_lut [read_text $::analog_lens::char_output]]
         if {[lindex [project_identity] 0] eq $::analog_lens::char_project} {
             set ::analog_lens::lut_rows $rows; set ::analog_lens::lut_file $::analog_lens::char_output
             set ::analog_lens::lut_slice [get [lindex $rows 0] slice]
@@ -126,7 +126,10 @@ proc ::analog_lens::characterization_readable {} {
             set char_status "Loaded [llength $rows] measured samples. CSV and provenance: $::analog_lens::char_output"
         } else {set char_status "Complete. Project changed; load $::analog_lens::char_output when you return."}
         set char_state completed
-    } why]} {set char_state failed; set char_status "Generated lookup could not be loaded: $why"}
+    } why]} {
+        append char_log "\n$::errorInfo\n"
+        set char_state failed; set char_status "Generated lookup could not be loaded: $why"
+    }
     update_characterization_ui
 }
 proc ::analog_lens::update_characterization_ui {} {

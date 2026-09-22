@@ -215,3 +215,21 @@ class Integration(unittest.TestCase):
         self.set('result_metadata', ''); self.set('lookup_match_key', '')
         self.call('auto_select_lookup')
         self.assertIn('No compatible', self.get('lookup_match_message'))
+
+    def test_characterization_completion_loads_csv_and_autosaves_project(self):
+        path = self.load_compatible()
+        self.call('characterize_dialog')
+        self.set('lut_rows', ''); self.set('lut_file', '')
+        self.set('char_output', str(path)); self.set('char_project', self.get('project_key'))
+        self.set('char_state', 'running')
+        # Exercise the actual EOF/completion handler with a real pipe and
+        # fixture CSV. These values remain explicitly test data.
+        channel = self.c('open', ('|', 'cat', str(path), '2>@1'), 'r')
+        self.set('char_channel', channel)
+        self.call('characterization_readable')
+        self.assertEqual(self.get('char_state'), 'completed', self.get('char_log'))
+        self.assertEqual(self.get('lut_file'), str(path))
+        self.assertGreater(int(self.c('llength', self.get('lut_rows'))), 0)
+        self.assertIn('Loaded', self.get('char_status'))
+        session = self.call('project_session_path', self.get('project_key'), str(self.directory))
+        self.assertTrue(Path(session).is_file())

@@ -6,7 +6,7 @@ Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC des
 
 This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
 
-**Validation:** 84 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
+**Validation:** 85 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
 
 ## Interface preview
 
