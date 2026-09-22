@@ -1,6 +1,6 @@
 # GUI audit and upgrade
 
-Date: 2026-09-22 · Original audit: 0.2.0 · Current follow-up: 0.4.0
+Date: 2026-09-22 · Original audit: 0.2.0 · Current follow-up: [0.6.1](GUI_AUDIT_061.md)
 
 ## Scope and interpretation
 

@@ -4,17 +4,19 @@ New in v0.6: a unified **Size & verify** workspace, device-condition reuse, acti
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
 
-Version **0.6.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
+Version **0.6.1** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
 The **inspector sidebar** connects normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. The [usability guide](docs/USABILITY_V06.md) explains the guided workspace; the [integration guide](docs/INTEGRATION_V05.md) covers project history and characterization batches.
 
-**Validated in IIC 2026.08:** 118 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35762801866) includes the unified workspace, condition reuse, optional setup, unit inputs, installed corner choices, visual verification and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+**Validated in IIC 2026.08:** 125 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35767855614) includes the unified workspace, condition reuse, optional setup, unit inputs, installed corner choices, visual verification and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+
+**v0.6.1 GUI audit:** improved short-window layouts, larger-text tables, dialog keyboard controls, field validation and progress feedback. [Apple HIG audit and screenshots](docs/GUI_AUDIT_061.md).
 
 ## Interface preview
 
-![Analog Lens Size & verify workspace with real SKY130 measurements and target tolerance bands.](docs/images/iic-sizing-workspace.png)
+![Analog Lens Size & verify workspace with real SKY130 measurements and target tolerance bands.](docs/images/iic-hig-workspace.png)
 
-**Size & verify.** Targets, inline geometry preview and measured verification in one workspace. [Optional project setup](docs/images/iic-project-setup.png) and [characterization with condition reuse](docs/images/iic-characterization-v06.png) are captured from the same real IIC run.
+**Size & verify.** Targets, inline geometry preview and measured verification in one workspace. This and [characterization with condition reuse](docs/images/iic-hig-characterization.png) show the v0.6.1 real IIC run. The [optional project setup](docs/images/iic-project-setup.png) capture documents v0.6.
 
 ![Analog Lens embedded in xschem, inspecting measured IHP SG13G2 transistor results in IIC-OSIC-TOOLS.](docs/images/iic-inspector.png)
 

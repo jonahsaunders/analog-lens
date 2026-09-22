@@ -4,6 +4,8 @@ Analog Lens stays inside xschem in IIC-OSIC-TOOLS. Open **Size & verify** from
 its menu, use **Size selected…** in the inspector, or press **Ctrl+5** inside the
 analysis window. The existing explorer and comparison tabs remain available.
 
+The [v0.6.1 GUI audit](GUI_AUDIT_061.md) adds scrolling forms, persistent dialog actions, field-focused errors and improved large-text verification.
+
 ## One sizing workspace
 
 The new tab keeps the selected device, loaded measurements, conditions, targets,

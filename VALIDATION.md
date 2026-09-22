@@ -1,10 +1,10 @@
 # Validation record
 
-Version: 0.6.0 · Target: IIC-OSIC-TOOLS, Linux/X11 · Date: 2026-09-22
+Version: 0.6.1 · Target: IIC-OSIC-TOOLS, Linux/X11 · Date: 2026-09-22
 
 ## Native verification
 
-**118 tests pass** with Python 3.12 and Tcl/Tk 8.6.14 on Linux under Xvfb, without skips. The native Tk widget/event smoke test also passes. [Native CI run 35762801901](https://github.com/jonahsaunders/analog-lens/actions/runs/35762801901) verifies the same source commit as the container run below.
+**125 tests pass** with Python 3.12 and Tcl/Tk 8.6.14 on Linux under Xvfb, without skips. The native Tk widget/event smoke test also passes. [Native CI run 35767855567](https://github.com/jonahsaunders/analog-lens/actions/runs/35767855567) verifies the same source commit as the container run below.
 
 Coverage includes numerical calculations, PMOS polarity, missing-data/current guards, SKY130/GF180/IHP adapters, CSV/LUT validation, interpolation, installer preservation, keyboard navigation, sorting, filters, chart inspection, sessions, project switching and Linux subprocess cancellation.
 
@@ -19,14 +19,16 @@ The required runner rejects missing displays and skipped tests. A headless unitt
 
 The v0.6 checks additionally cover dimension-aware units, canonical session storage, body-bias sign conversion, unknown/stale conditions, unique versus ambiguous saved lookup matches, measured bias precedence, optional setup without simulation, inline recovery, unified preview/Undo, numeric verification charts and small-window keyboard scrolling.
 
+The v0.6.1 [GUI audit](docs/GUI_AUDIT_061.md) adds seven regression tests for compact dialogs and tabs, keyboard focus/scrolling, field errors, batch progress and input locks, log reading position, result selection, verification disclosure and host-surface contrast. The original layout checks also exercise keyboard access through scrolling tabs at 14-point system text.
+
 ## Real IIC integration
 
-Validated with **IIC-OSIC-TOOLS 2026.08** in [integration run 35762801866](https://github.com/jonahsaunders/analog-lens/actions/runs/35762801866), using code commit [`bc6a00b`](https://github.com/jonahsaunders/analog-lens/commit/bc6a00bdbe36e5ea8f85e5a2229fb08c0ec35cf7).
+Validated with **IIC-OSIC-TOOLS 2026.08** in [integration run 35767855614](https://github.com/jonahsaunders/analog-lens/actions/runs/35767855614), using code commit [`7be2893`](https://github.com/jonahsaunders/analog-lens/commit/7be289359dfd51ab7c8a2aa5735bce77d98d4ac9).
 
 - Container: `hpretl/iic-osic-tools:2026.08`, Linux/amd64.
 - Tools: xschem 3.4.8RC, ngspice 47, Tcl/Tk 8.6.14.
 - Resolved digest: `sha256:3c371645b19c6f6564dc8c7b21e39ad1c1833d274fe5b85639afe1ba9d7987e7`.
-- 118 native/contract tests passed in the container, without skips.
+- 125 native/contract tests passed in the container, without skips.
 - 24 direct model simulations passed: eight NMOS/PMOS metric checks plus sixteen two-finger simulations with one or two parallel copies. Doubling copies doubled measured current and gm within the checked tolerance.
 - Eight NMOS/PMOS characterization jobs passed at two lengths each.
 - Four real xschem GUI workflows passed, including hierarchy, cross-probing, highlighting, annotation placement, sidebar, native simulation/callback, cursor tracking, sizing/Undo and project restoration.
@@ -43,7 +45,7 @@ Validated with **IIC-OSIC-TOOLS 2026.08** in [integration run 35762801866](https
 | `ihp-sg13g2` | `sg13_lv_nmos` / `sg13_lv_pmos` | Passed | Passed |
 | `ihp-sg13cmos5l` | `sg13_lv_nmos` / `sg13_lv_pmos` | Passed | Passed |
 
-The [machine-readable v0.6 summary](docs/validation/iic-2026.08-v0.6.json) records versions, measured errors, deck hashes, geometry checks, verification verdicts and batch reuse. The workflow artifact retains generated schematics/decks, raw files, exports, dependency manifests, screenshots and logs. PDK model files are not redistributed. The [v0.5 summary](docs/validation/iic-2026.08-v0.5.json) and [v0.4 summary](docs/validation/iic-2026.08-v0.4.json) remain available as historical evidence.
+The [machine-readable v0.6.1 summary](docs/validation/iic-2026.08-v0.6.1.json) records versions, measured errors, deck hashes, geometry checks, verification verdicts and batch reuse. The workflow artifact retains generated schematics/decks, raw files, exports, dependency manifests, screenshots and logs. PDK model files are not redistributed. The [v0.6 summary](docs/validation/iic-2026.08-v0.6.json), [v0.5 summary](docs/validation/iic-2026.08-v0.5.json) and [v0.4 summary](docs/validation/iic-2026.08-v0.4.json) remain available as historical evidence.
 
 A passing integration test means the workflow measured and reported the target error correctly. It does **not** mean a width-only sizing estimate met gm and gm/Id targets in the circuit: the live testbench keeps its fixed gate bias, and a legitimate **Miss** is expected for some requests. The verification capture shows that distinction.
 

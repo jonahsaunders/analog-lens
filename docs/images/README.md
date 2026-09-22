@@ -32,6 +32,32 @@ The v0.6 captures below come from [passing run 35762801866](https://github.com/j
 | `iic-verification-chart.png` | Target/before/after table and two measured tolerance bands |
 | `iic-characterization-v06.png` | Installed corner choices and device-condition reuse controls |
 
+## v0.6.1 real IIC captures
+
+`iic-hig-workspace.png` and `iic-hig-characterization.png` show the real SKY130
+NMOS workflow from [passing run 35767855614](https://github.com/jonahsaunders/analog-lens/actions/runs/35767855614),
+code `7be289359dfd51ab7c8a2aa5735bce77d98d4ac9`, artifact `10713620068`.
+The first shows measured target errors and the second shows seven generated
+lookup samples. These are direct captures; a reported target Miss is preserved.
+See the [v0.6.1 validation summary](../validation/iic-2026.08-v0.6.1.json).
+
+## v0.6.1 GUI audit captures
+
+The three `hig-*.png` images below come from `tools/capture_gui_audit.py` at
+code `7be289359dfd51ab7c8a2aa5735bce77d98d4ac9`. They show actual Tcl/Tk
+rendering with synthetic fixtures, not measured PDK results. No pixels or
+measurements were edited after capture.
+
+| Image | Capture mode and view |
+|---|---|
+| `hig-large-characterization.png` | 14-point system text, 640×520; scrolling form and wrapping persistent actions |
+| `hig-large-setup.png` | 14-point system text, 640×520; optional setup with scrolling content and visible actions |
+| `hig-dark-workspace.png` | Representative dark host theme, 1380×940; synthetic sizing and numeric verification |
+
+The [v0.6.1 audit](../GUI_AUDIT_061.md) contains reproduction commands,
+review scope and accessibility limits. Earlier screenshots above retain
+their original version and workflow provenance.
+
 ## Regenerate synthetic previews
 
 On Linux, install Python with tkinter, Pillow with XCB support, Xvfb, xauth,
