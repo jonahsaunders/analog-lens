@@ -39,6 +39,10 @@ proc ::analog_lens::install_menu {} {
     foreach {name title} {lut {gm/Id explorer} compare {Compare runs} setup {Setup & help}} {
         $m add command -label $title -command [list ::analog_lens::open_tab $name]
     }
+    $m add separator
+    $m add command -label {Open session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog open}}
+    $m add command -label {Save session…} -command {::analog_lens::show; ::analog_lens::safe {::analog_lens::session_dialog save}}
+    $m add command -label {Check environment} -command {::analog_lens::show; ::analog_lens::check_environment}
     $bar add cascade -label {Analog Lens} -menu $m
 }
 proc ::analog_lens::active_pdk {} {
@@ -65,12 +69,20 @@ proc ::analog_lens::show {} {
     ttk::label $root.head.pdk -textvariable ::analog_lens::summary -style AL.Muted.TLabel
     pack $root.head.pdk -side right -padx {12 0}
     ttk::frame $root.tools -style AL.TFrame; pack $root.tools -fill x -pady {0 8}
-    foreach {n text cmd} {run {Run operating point} run_op load {Load results…} load_results refresh Refresh refresh export {Export CSV…} export_dialog log {Run log} log_dialog} {
+    foreach {n text cmd} {run {Run operating point} run_op cancel Cancel cancel_run load {Load results…} load_results refresh Refresh refresh export {Export CSV…} export_dialog log {Run log} log_dialog} {
         button $root.tools.$n $text ::analog_lens::$cmd
     }
+    ttk::menubutton $root.tools.session -text Session -menu $root.tools.session.menu -style AL.TButton
+    menu $root.tools.session.menu -tearoff 0
+    $root.tools.session.menu add command -label {Open session…} -command {::analog_lens::safe {::analog_lens::session_dialog open}}
+    $root.tools.session.menu add command -label {Save session…} -command {::analog_lens::safe {::analog_lens::session_dialog save}}
+    $root.tools.session.menu add separator
+    $root.tools.session.menu add command -label {Check environment} -command ::analog_lens::check_environment
     $root.tools.run configure -style AL.Primary.TButton
     layout_toolbar
     ttk::progressbar $root.progress -mode indeterminate -length 160
+    ttk::label $root.elapsed -textvariable ::analog_lens::run_feedback -style AL.Muted.TLabel -wraplength 800
+    wrapping $root.elapsed
     ttk::notebook $window.tabs -style AL.TNotebook
     # Reserve feedback before the expanding content so it survives short windows.
     ttk::label $root.status -textvariable ::analog_lens::status -style AL.Muted.TLabel -wraplength 850
@@ -89,12 +101,15 @@ proc ::analog_lens::show {} {
     trace add variable ::analog_lens::run_log write ::analog_lens::update_log
     if {[catch {refresh} msg]} {set status $msg; render}
     update_run_controls
+    restore_layout
     set timer [after 800 ::analog_lens::tick]
     focus $root.tools.run
 }
 
 proc ::analog_lens::close_window {} {
     variable window; variable timer; variable plot_after; variable layout_after
+    set ::analog_lens::session_geometry "[winfo width $window]x[winfo height $window]"
+    set ::analog_lens::session_sash [$window.tabs.op.panes sashpos 0]
     foreach id [list $timer $plot_after $layout_after] {if {$id ne {}} {after cancel $id}}
     set timer {}; set plot_after {}; set layout_after {}
     foreach var {target_length target_gmid target_gm_u} {
@@ -277,6 +292,7 @@ proc ::analog_lens::follow_selection {} {
 proc ::analog_lens::tick {} {
     variable timer; variable window; variable live; variable watch_key; variable run_channel; variable status
     if {![winfo exists $window]} {set timer {}; return}
+    update_run_feedback
     if {$run_channel eq {}} {
         if {![catch {list [context] [raw rawfile] [raw sim_type] [xschem get instances]} key] && $watch_key ne $key} {
             set watch_key $key
@@ -348,6 +364,8 @@ proc ::analog_lens::update_run_controls {} {
     set idle [expr {$run_channel eq {}}]
     set current [expr {$idle && [llength $records] > 0 && ![catch {context} ctx] && $ctx eq $active_context}]
     foreach n {run load refresh} {set_enabled $window.root.tools.$n $idle}
+    set_enabled $window.root.tools.cancel [expr {!$idle && !$::analog_lens::run_cancelled}]
+    $window.root.tools.session.menu entryconfigure 0 -state [expr {$idle ? "normal" : "disabled"}]
     set_enabled $window.root.tools.export $current
     set_enabled $window.tabs.compare.keep $current
     set_enabled $window.tabs.op.point.color $current
@@ -362,12 +380,15 @@ proc ::analog_lens::update_run_controls {} {
     set_enabled $window.tabs.lut.size.calc $has_lut
     set_enabled $window.tabs.lut.tools.data $has_lut
     set_enabled $window.tabs.lut.tools.sizing $has_lut
+    update_run_feedback
     if {$idle} {
         $window.root.tools.run configure -text {Run operating point}
         $window.root.progress stop; pack forget $window.root.progress
+        pack forget $window.root.elapsed
     } else {
         $window.root.tools.run configure -text {Running…}
         pack $window.root.progress -before $window.tabs -fill x -pady {0 8}
+        pack $window.root.elapsed -before $window.root.progress -fill x -pady {0 4}
         $window.root.progress start 25
     }
 }
@@ -400,7 +421,7 @@ proc ::analog_lens::log_dialog {} {
     pack $w.horizontal -side bottom -fill x
     pack $w.scroll -side right -fill y; pack $w.text -fill both -expand 1
     bind $w <Escape> [list destroy $w]
-    set mod [expr {[tk windowingsystem] eq "aqua" ? "Command" : "Control"}]
+    set mod Control
     bind $w <$mod-w> [list destroy $w]
     update_log; focus $w.text
 }
@@ -436,9 +457,7 @@ proc ::analog_lens::build_lut {w} {
     pack $w.tools.sizing -side right -padx {0 12}
     ttk::label $w.source -textvariable ::analog_lens::lut_source -style AL.Muted.TLabel -wraplength 800
     pack $w.source -fill x -pady {0 8}; wrapping $w.source
-    pack [label $w.slice_label {Model / corner / temperature / bias / reference width}] -anchor w -pady {0 4}
-    ttk::combobox $w.slice -state readonly -textvariable ::analog_lens::slice_label
-    pack $w.slice -fill x -pady {0 10}; bind $w.slice <<ComboboxSelected>> ::analog_lens::select_slice
+    build_lookup_filters $w
     # Pack this form before the flexible plot: it must remain usable at minimum size.
     ttk::labelframe $w.size -text {Sizing estimate} -style AL.TLabelframe -padding 10
     set col 0
@@ -465,11 +484,24 @@ proc ::analog_lens::build_lut {w} {
     pack $w.plot -fill both -expand 1
     bind $w.plot <Configure> ::analog_lens::schedule_plot
     toggle_sizing
-    # The window can close while its lookup data remains in this xschem session.
-    $w.slice configure -values [dict keys $::analog_lens::slice_labels]
-    if {$::analog_lens::lut_slice ne {}} {
-        $w.size.length configure -values [lsort -real [dict keys [lut_curves $::analog_lens::lut_rows $::analog_lens::lut_slice gain]]]
+    ttk::frame $w.charttools
+    ttk::label $w.compact -text {Sizing view · Hide Sizing estimate to return to the chart. View data remains available.} -style AL.Muted.TLabel -wraplength 700
+    wrapping $w.compact
+    pack $w.charttools -before $w.plot -fill x -pady {0 4}
+    foreach {name title command} {in {Zoom +} {::analog_lens::zoom_plot 0.7} out {Zoom −} {::analog_lens::zoom_plot 1.43} reset {Reset view} ::analog_lens::reset_plot export {Export SVG…} ::analog_lens::export_plot_dialog} {
+        pack [button $w.charttools.$name $title $command] -side left -padx {0 6}
     }
+    ttk::label $w.point -textvariable ::analog_lens::plot_point_text -style AL.Muted.TLabel -wraplength 700
+    pack $w.point -before $w.plot -fill x -pady {0 4}; wrapping $w.point
+    $w.plot configure -takefocus 1
+    bind $w.plot <Button-1> {::analog_lens::inspect_plot %x %y}
+    bind $w.plot <Left> {::analog_lens::step_plot_point -1; break}
+    bind $w.plot <Right> {::analog_lens::step_plot_point 1; break}
+    bind $w.plot <plus> {::analog_lens::zoom_plot 0.7; break}
+    bind $w.plot <minus> {::analog_lens::zoom_plot 1.43; break}
+    bind $w.plot <Home> {::analog_lens::reset_plot; break}
+    bind $w <Configure> ::analog_lens::fit_lookup_layout
+    rebuild_lookup_filters
 }
 
 proc ::analog_lens::load_lut {} {
@@ -477,24 +509,7 @@ proc ::analog_lens::load_lut {} {
     set path [tk_getOpenFile -parent $::analog_lens::window -title {Load measured gm/Id lookup data} -filetypes {{{CSV lookup table} .csv}}]
     if {$path eq {}} {return}
     set parsed [parse_lut [read_text $path]]
-    set lut_rows $parsed; set lut_file $path; set lut_slices {}; set slice_labels {}
-    foreach r $lut_rows {dict set lut_slices [dict get $r slice] 1}
-    foreach s [dict keys $lut_slices] {
-        lassign $s pdk model corner temp vds vsb width
-        dict set slice_labels "$pdk · $model · $corner · $temp °C · Vds=$vds · Vsb=$vsb · W=$width µm" $s
-    }
-    set labels [dict keys $slice_labels]; $window.tabs.lut.slice configure -values $labels
-    set ::analog_lens::lut_source [file tail $path]
-    if {[lsearch -glob [dict keys $lut_slices] DEMO_ONLY*] >= 0} {append ::analog_lens::lut_source { · DEMO ONLY — synthetic data, not a characterized PDK}}
-    set slice_label [lindex $labels 0]; select_slice
-}
-proc ::analog_lens::select_slice {} {
-    variable slice_labels; variable slice_label; variable lut_slice; variable lut_rows; variable window; variable target_length
-    if {![dict exists $slice_labels $slice_label]} {return}
-    set lut_slice [dict get $slice_labels $slice_label]
-    set lengths [lsort -real [dict keys [lut_curves $lut_rows $lut_slice gain]]]
-    $window.tabs.lut.size.length configure -values $lengths; set target_length [lindex $lengths 0]
-    set ::analog_lens::sizing_text {}; schedule_plot; update_run_controls
+    set lut_rows $parsed; set lut_file [file normalize $path]; set lut_slice {}; rebuild_lookup_filters
 }
 proc ::analog_lens::schedule_plot {} {
     variable plot_after
@@ -503,6 +518,8 @@ proc ::analog_lens::schedule_plot {} {
 }
 proc ::analog_lens::draw_plot {} {
     variable window; variable plot_after; variable lut_rows; variable lut_slice; variable lut_y; variable lut_note; variable colors
+    variable plot_view; variable plot_bounds; variable plot_points; variable plot_point_index
+    set plot_points {}
     set plot_after {}; set c $window.tabs.lut.plot
     if {![winfo exists $c]} {return}
     $c delete all; set width [winfo width $c]; set height [winfo height $c]
@@ -511,7 +528,7 @@ proc ::analog_lens::draw_plot {} {
             -width [expr {max(100,$width-24)}] -fill [dict get $colors muted] -font ALBody -justify center
         return
     }
-    set curves [lut_curves $lut_rows $lut_slice $lut_y]
+    set curves [visible_curves]
     if {![dict size $curves]} {
         set lut_note {No curves for this metric. Load lookup data or choose another curve.}
         $c create text [expr {$width/2}] [expr {$height/2}] -text "Load a lookup CSV to see process curves.\nA CSV template is included in the examples folder." -fill [dict get $colors muted] -font ALHeading -justify center
@@ -524,6 +541,8 @@ proc ::analog_lens::draw_plot {} {
     if {$xmax <= $xmin} {set xmax [expr {$xmin+1}]}
     if {$ymax <= $ymin} {set ymax [expr {$ymin+1}]}
     set dy [expr {($ymax-$ymin)*0.1}]; set ymin [expr {max(0,$ymin-$dy)}]; set ymax [expr {$ymax+$dy}]
+    if {[llength $plot_view] == 4} {lassign $plot_view xmin xmax ymin ymax}
+    set plot_bounds [list $xmin $xmax $ymin $ymax]
     set left [expr {max(88,[font measure ALBody [eng $ymax]]+24)}]; set right [expr {$width-28}]; set top 26; set bottom [expr {$height-65}]
     for {set i 0} {$i <= 4} {incr i} {
         set x [expr {$left+($right-$left)*$i/4.0}]; set y [expr {$bottom-($bottom-$top)*$i/4.0}]
@@ -537,31 +556,48 @@ proc ::analog_lens::draw_plot {} {
     $c create text $left 12 -anchor w -text [dict get $labels $lut_y] -fill [dict get $colors fg] -font ALHeading
     set series_colors [dict get $colors curves]; set dashes {{} {8 3} {3 3} {8 3 2 3} {12 4} {2 4}}; set n 0; set legend {}
     dict for {length points} $curves {
-        set coords {}; set color [lindex $series_colors [expr {$n%6}]]
+        set color [lindex $series_colors [expr {$n%6}]]; set previous {}; set last_visible {}
         foreach p $points {
             lassign $p x y
-            lappend coords [expr {$left+($x-$xmin)/($xmax-$xmin)*($right-$left)}] [expr {$bottom-($y-$ymin)/($ymax-$ymin)*($bottom-$top)}]
+            if {$previous ne {}} {
+                lassign $previous ax ay
+                set clipped [clip_segment $ax $ay $x $y $plot_bounds]
+                if {[llength $clipped]} {
+                    set coords {}
+                    foreach {cx cy} $clipped {lappend coords [expr {$left+($cx-$xmin)/($xmax-$xmin)*($right-$left)}] [expr {$bottom-($cy-$ymin)/($ymax-$ymin)*($bottom-$top)}]}
+                    $c create line {*}$coords -fill $color -width 2.5 -dash [lindex $dashes [expr {$n%6}]]
+                }
+            }
+            set previous [list $x $y]
+            if {$x >= $xmin && $x <= $xmax && $y >= $ymin && $y <= $ymax} {
+                set px [expr {$left+($x-$xmin)/($xmax-$xmin)*($right-$left)}]
+                set py [expr {$bottom-($y-$ymin)/($ymax-$ymin)*($bottom-$top)}]
+                lappend plot_points [list $px $py $length $x $y]; set last_visible [list $px $py]
+                $c create oval [expr {$px-2}] [expr {$py-2}] [expr {$px+2}] [expr {$py+2}] -fill $color -outline $color
+            }
         }
-        if {[llength $coords] >= 4} {$c create line {*}$coords -fill $color -width 2.5 -dash [lindex $dashes [expr {$n%6}]]}
-        # Label each curve directly at its last point. Offsets spread nearby labels.
-        if {[llength $coords]} {
-            $c create text [lindex $coords end-1] [expr {[lindex $coords end]-10-($n%2)*12}] -anchor e -text "$length µm" -fill $color -font ALBody
+        if {$last_visible ne {}} {
+            lassign $last_visible px py
+            $c create text $px [expr {max($top+8,$py-10-($n%2)*12)}] -anchor e -text "$length µm" -fill $color -font ALBody
         }
-        lappend legend "L=$length µm"; incr n
+        incr n
     }
-    set lut_note "[join $legend {   ·   }]\nFixed model, corner, bias, temperature and reference width."
+    set warning [lookup_provenance_warning]
+    set lut_note "$n curve(s) · Fixed model, corner, bias, temperature and reference width."
+    if {$warning ne {}} {append lut_note "\n$warning"}
     set r [chosen]
     if {$r ne {}} {
         set v [get $r values]; set x [number [get $v gmid]]; set y [number [get $v $lut_y]]
         set model [get $r model]; set lutmodel [lindex $lut_slice 1]
         regsub {^(sky130_fd_pr__|gf180mcu_fd_pr__)} $model {} model
         regsub {^(sky130_fd_pr__|gf180mcu_fd_pr__)} $lutmodel {} lutmodel
-        if {$model eq $lutmodel && $lut_y ne "density" && $x ne {} && $y ne {} && $x >= $xmin && $x <= $xmax && $y >= $ymin && $y <= $ymax} {
+        if {![string match {Overlay hidden:*} $warning] && $model eq $lutmodel && $lut_y ne "density" && $x ne {} && $y ne {} && $x >= $xmin && $x <= $xmax && $y >= $ymin && $y <= $ymax} {
             set px [expr {$left+($x-$xmin)/($xmax-$xmin)*($right-$left)}]; set py [expr {$bottom-($y-$ymin)/($ymax-$ymin)*($bottom-$top)}]
             $c create oval [expr {$px-5}] [expr {$py-5}] [expr {$px+5}] [expr {$py+5}] -fill [dict get $colors fg] -outline [dict get $colors field] -width 2
-            append lut_note "\nDot: [get $r name], actual circuit result. Confirm its corner, temperature and bias match this curve."
+            append lut_note "\nDot: [get $r name], current circuit result."
         }
     }
+    show_plot_point
 }
 proc ::analog_lens::calculate_size {} {
     variable lut_rows; variable lut_slice; variable target_length; variable target_gmid; variable target_gm_u
@@ -582,22 +618,36 @@ proc ::analog_lens::calculate_size {} {
 }
 
 proc ::analog_lens::build_compare {w} {
-    pack [label $w.title {Compare before and after} AL.Heading.TLabel] -anchor w -pady {0 6}
-    ttk::label $w.info -text {Keep a baseline, edit the circuit, then run operating point again at the same hierarchy level.} -style AL.Muted.TLabel -wraplength 780
-    pack $w.info -fill x -pady {0 12}; wrapping $w.info
-    ttk::frame $w.actions -style AL.TFrame; pack $w.actions -fill x -pady {0 12}
-    pack [button $w.keep {Keep current results as baseline} ::analog_lens::keep_baseline] -in $w.actions -side left
+    pack [label $w.title {Compare saved runs} AL.Heading.TLabel] -anchor w -pady {0 6}
+    pack [label $w.info {Name a baseline, edit the circuit, then rerun at the same hierarchy level.} AL.Muted.TLabel] -fill x -pady {0 10}
+    wrapping $w.info
+    ttk::frame $w.actions; pack $w.actions -fill x -pady {0 8}
+    ttk::entry $w.actions.name -textvariable ::analog_lens::baseline_name -width 20
+    pack $w.actions.name -side left -fill x -expand 1 -padx {0 8}
+    pack [button $w.keep {Keep baseline} ::analog_lens::keep_baseline] -in $w.actions -side left
     pack [button $w.copy {Copy comparison} [list ::analog_lens::copy_table $w.tree]] -in $w.actions -side right
+    ttk::frame $w.saved; pack $w.saved -fill x -pady {0 8}
+    pack [label $w.saved.label Baseline] -side left -padx {0 8}
+    ttk::combobox $w.saved.choice -state readonly -textvariable ::analog_lens::baseline_choice -values [dict keys $::analog_lens::baselines]
+    pack $w.saved.choice -side left -fill x -expand 1 -padx {0 8}
+    bind $w.saved.choice <<ComboboxSelected>> ::analog_lens::select_baseline
+    pack [button $w.saved.export {Export comparison…} ::analog_lens::export_comparison_dialog] -side right
     ttk::label $w.summary -textvariable ::analog_lens::compare_summary -style AL.Muted.TLabel -wraplength 780
     pack $w.summary -fill x -pady {0 8}; wrapping $w.summary
-    pack [label $w.note {Baseline stays in memory for this session. Copy comparison to retain both runs.} AL.Muted.TLabel] -side bottom -fill x -pady {10 0}
+    pack [label $w.note {Session → Save session keeps named baselines, targets, lookup choices, and layout on disk.} AL.Muted.TLabel] -side bottom -fill x -pady {8 0}
     wrapping $w.note
     ttk::frame $w.table; pack $w.table -fill both -expand 1
-    ttk::treeview $w.tree -columns {name old new delta oldgain newgain} -show headings -style AL.Treeview -height 6
-    foreach {key title} {name Device old {Baseline gm/Id} new {Current gm/Id} delta {Change (%)} oldgain {Baseline gm/gds} newgain {Current gm/gds}} {
-        $w.tree heading $key -text $title
-        set width [expr {max(125,[font measure ALHeading $title]+24)}]
-        $w.tree column $key -width $width -minwidth $width -anchor [expr {$key eq "name" ? "w" : "e"}]
+    set columns {name state old new delta oldgain newgain change_gain}
+    foreach metric {id headroom ft} {lappend columns old_$metric new_$metric change_$metric}
+    ttk::treeview $w.tree -columns $columns -show headings -style AL.Treeview -height 6
+    set titles [dict create name Device state Status old {Baseline gm/Id} new {Current gm/Id} delta {gm/Id change (%)} oldgain {Baseline gain} newgain {Current gain} change_gain {Gain change}]
+    foreach metric {id headroom ft} title {Id Headroom {Estimated fT}} {
+        dict set titles old_$metric "Baseline $title"; dict set titles new_$metric "Current $title"; dict set titles change_$metric "$title change"
+    }
+    foreach key $columns {
+        set title [dict get $titles $key]; $w.tree heading $key -text $title
+        set width [expr {max(115,[font measure ALHeading $title]+24)}]
+        $w.tree column $key -width $width -minwidth $width -anchor [expr {$key in {name state} ? "w" : "e"}]
     }
     ttk::scrollbar $w.y -command [list $w.tree yview]
     ttk::scrollbar $w.x -orient horizontal -command [list $w.tree xview]
@@ -607,38 +657,48 @@ proc ::analog_lens::build_compare {w} {
     grid $w.x -in $w.table -row 1 -column 0 -sticky ew
     grid columnconfigure $w.table 0 -weight 1; grid rowconfigure $w.table 0 -weight 1
 }
-
 proc ::analog_lens::keep_baseline {} {
-    variable records; variable snapshot; variable active_context; variable snapshot_context; variable status
+    variable records; variable baselines; variable baseline_name; variable baseline_choice; variable active_context; variable result_metadata; variable status
     if {![llength $records]} {error "Load or run an operating point first."}
-    set snapshot $records; set snapshot_context $active_context; render_compare
-    set status "Baseline saved for [llength $records] devices. Edit the circuit, then run operating point again."
+    set name [string trim $baseline_name]
+    if {$name eq {}} {set name "Run [clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}]"}
+    set unique $name; set i 1
+    while {[dict exists $baselines $unique]} {set unique "$name ([incr i])"}
+    dict set baselines $unique [dict create records $records context $active_context metadata $result_metadata]
+    set baseline_choice $unique; set baseline_name {}; select_baseline
+    set status "Baseline '$unique' kept. Save the session to retain it after restarting xschem."
 }
-
 proc ::analog_lens::render_compare {} {
     variable window; variable snapshot; variable records; variable snapshot_context; variable active_context; variable compare_summary
+    variable snapshot_metadata; variable result_metadata; variable comparison_rows
     set tree $window.tabs.compare.tree; if {![winfo exists $tree]} {return}
-    $tree delete [$tree children {}]
-    set_enabled $window.tabs.compare.copy 0
-    if {![llength $snapshot]} {
-        set compare_summary {No baseline yet. Load results, then keep a baseline to start a comparison.}; return
-    }
-    if {$snapshot_context ne $active_context} {
+    $tree delete [$tree children {}]; set comparison_rows {}
+    set_enabled $window.tabs.compare.copy 0; set_enabled $window.tabs.compare.saved.export 0
+    if {![llength $snapshot]} {set compare_summary {No baseline yet. Load results, then keep a named baseline.}; return}
+    if {[context_key $snapshot_context] ne [context_key $active_context]} {
         set compare_summary "Baseline belongs to [lindex $snapshot_context 1] ([lindex $snapshot_context 2]). Return to that hierarchy to compare."; return
     }
-    set old {}; foreach r $snapshot {dict set old [list [get $r name] [get $r model]] [get $r values]}
-    foreach r $records {
-        set key [list [get $r name] [get $r model]]; if {![dict exists $old $key]} {continue}
-        set a [dict get $old $key]; set b [get $r values]; set delta {—}
-        if {[get $a gmid] ne {} && [get $a gmid] > 0 && [get $b gmid] ne {}} {
-            set delta [format {%+.2f} [expr {100*([get $b gmid]/[get $a gmid]-1)}]]
+    if {![llength $records]} {set compare_summary {Load current results to compare with this baseline.}; return}
+    set comparison_rows [comparison_data $snapshot $records]
+    set counts [dict create Matched 0 Added 0 Removed 0]
+    foreach r $comparison_rows {
+        dict incr counts [get $r state]
+        set delta [get $r percent_gmid]; if {$delta eq {}} {set delta —} else {set delta [format {%+.2f} $delta]}
+        set values [list [get $r name] [get $r state] [eng [get $r old_gmid]] [eng [get $r new_gmid]] $delta [eng [get $r old_gain]] [eng [get $r new_gain]] [eng [get $r change_gain]]]
+        foreach metric {id headroom ft} unit {A V Hz} {
+            foreach prefix {old new change} {lappend values [eng [get $r ${prefix}_$metric] $unit]}
         }
-        $tree insert {} end -values [list [get $r name] [eng [get $a gmid]] [eng [get $b gmid]] $delta [eng [get $a gain]] [eng [get $b gain]]]
+        $tree insert {} end -values $values
     }
-    set count [llength [$tree children {}]]
-    set compare_summary "$count matched devices · Baseline: [lindex $snapshot_context 1] · Same device name and model required."
-    if {!$count} {set compare_summary {No matching devices. Return to the baseline hierarchy and load results with the same device names and models.}}
-    set_enabled $window.tabs.compare.copy [expr {$count > 0}]
+    set compare_summary "[dict get $counts Matched] matched · [dict get $counts Added] added · [dict get $counts Removed] removed"
+    set differences [condition_differences $snapshot_metadata $result_metadata]
+    if {[llength $differences]} {append compare_summary "\nConditions differ: [join $differences {; }]"}
+    set unknown {}
+    foreach key {pdk corner temp_c vds_v vsb_v} {
+        if {[get $snapshot_metadata $key] eq {} || [get $result_metadata $key] eq {}} {lappend unknown [condition_label $key]}
+    }
+    if {[llength $unknown]} {append compare_summary "\nConditions unverified: [join $unknown {, }]. Record known values in Setup & help."}
+    set_enabled $window.tabs.compare.copy 1; set_enabled $window.tabs.compare.saved.export 1
 }
 
 proc ::analog_lens::build_setup {w} {
@@ -660,11 +720,27 @@ proc ::analog_lens::build_setup {w} {
     pack [button $w.apply {Apply targets} ::analog_lens::apply_targets] -in $w.actions -side right
     ttk::label $w.message -textvariable ::analog_lens::targets_message -style AL.Muted.TLabel -wraplength 620
     pack $w.message -in $w.actions -side left -fill x -expand 1 -padx {0 12}; wrapping $w.message
-    ttk::separator $w.separator; pack $w.separator -fill x -pady {0 12}
+    pack [button $w.environment {Check IIC environment} ::analog_lens::check_environment] -anchor w -pady {0 8}
+    ttk::labelframe $w.conditions -text {Result conditions (optional, user-declared)} -padding 8
+    pack $w.conditions -fill x -pady {0 8}
+    set col 0
+    foreach key {corner temp_c vds_v vsb_v} title {Corner {Temperature (°C)} {Vds (V)} {Vsb (V)}} {
+        set ::analog_lens::edit_conditions($key) [get $::analog_lens::declared $key]
+        label $w.conditions.${key}label $title
+        ttk::entry $w.conditions.$key -width 10 -textvariable ::analog_lens::edit_conditions($key)
+        grid $w.conditions.${key}label -row 0 -column $col -sticky w -padx {0 8}
+        grid $w.conditions.$key -row 1 -column $col -sticky ew -padx {0 8}
+        grid columnconfigure $w.conditions $col -weight 1; incr col
+    }
+    button $w.conditions.apply Record ::analog_lens::apply_conditions
+    grid $w.conditions.apply -row 1 -column 4 -sticky e
+    ttk::label $w.conditions.message -textvariable ::analog_lens::conditions_message -style AL.Muted.TLabel -wraplength 700
+    grid $w.conditions.message -row 2 -column 0 -columnspan 5 -sticky ew; wrapping $w.conditions.message
+    ttk::separator $w.separator; pack $w.separator -fill x -pady {0 8}
     pack [label $w.help_title {Workflow & reference} AL.Heading.TLabel] -anchor w -pady {0 8}
     ttk::frame $w.reference; pack $w.reference -fill both -expand 1
-    set help "1  Open your top-level testbench with the PDK and models configured as usual.\n2  Click Operating point. The extension generates a separate netlist and saves transistor parameters automatically.\n3  Descend into your circuit. The list follows the current hierarchy. Select a transistor to inspect it.\n4  Load measured lookup CSV data in gm/Id explorer, or keep a baseline to compare an edit.\n\nPDK adapters\n• SKY130A (SKY130B naming compatibility): BSIM, sky130_fd_pr wrappers.\n• GF180MCU-D (A/B/C naming compatibility): BSIM, internal m0 devices.\n• IHP SG13G2 and SG13CMOS5L: PSP/OSDI, internal n<model> devices.\n• IHP vertical NPN: Ic, Ib, gm, go, Vbe, Vbc capture; MOS-only metrics remain unavailable.\n\nNgspice must be on PATH. The IIC-OSIC-TOOLS environment supplies PDK setup and OSDI loading. This version runs ngspice; VACASK and Xyce are not supported.\n\nOperating point preserves your source schematic. Its disposable netlist removes top-level .control blocks and analyses, retains models, sources and parameters, then inserts an OP run. Changes made only inside your .control block (alter, alterparam, pre_osdi, etc.) must also be present in the deck/environment, or use Load results from your own simulation.\n\nFor loaded DC/transient data, Sample and Dataset select the exact saved point. Missing parameters show —. No time interpolation or guessed values.\n\nUse Export CSV to save results. The lookup template and optional MAT converter are included in the extension folder."
-    set modifier [expr {[tk windowingsystem] eq "aqua" ? "Command" : "Ctrl"}]
+    set help "1  Open your top-level testbench with the PDK and models configured as usual.\n2  Click Operating point. The extension generates a separate netlist and saves transistor parameters automatically.\n3  Descend into your circuit. The list follows the current hierarchy. Select a transistor to inspect it.\n4  Load measured lookup CSV data, or keep a named baseline to compare an edit.\n5  Save the session to retain baselines, targets, lookup choices and layout.\n\nCancel stops only the simulator started by Analog Lens. Closing the window lets it continue.\n\nChart: select a length, inspect samples with Left/Right, zoom with +/−, and reset with Home. Export SVG saves the current view.\n\nUse Check IIC environment for setup diagnostics. Optional result conditions are user-declared; they do not change simulation settings.\n\nPDK adapters\n• SKY130A (SKY130B naming compatibility): BSIM, sky130_fd_pr wrappers.\n• GF180MCU-D (A/B/C naming compatibility): BSIM, internal m0 devices.\n• IHP SG13G2 and SG13CMOS5L: PSP/OSDI, internal n<model> devices.\n• IHP vertical NPN: Ic, Ib, gm, go, Vbe, Vbc capture; MOS-only metrics remain unavailable.\n\nNgspice must be on PATH. The IIC-OSIC-TOOLS environment supplies PDK setup and OSDI loading. This version runs ngspice; VACASK and Xyce are not supported.\n\nOperating point preserves your source schematic. Its disposable netlist removes top-level .control blocks and analyses, retains models, sources and parameters, then inserts an OP run. Changes made only inside your .control block (alter, alterparam, pre_osdi, etc.) must also be present in the deck/environment, or use Load results from your own simulation.\n\nFor loaded DC/transient data, Sample and Dataset select the exact saved point. Missing parameters show —. No time interpolation or guessed values.\n\nUse Export CSV to save results. The lookup template and optional MAT converter are included in the extension folder."
+    set modifier Ctrl
     append help "\n\nKeyboard shortcuts\n$modifier+F  Find a device\n$modifier+O  Load results\n$modifier+R  Refresh results\n$modifier+Shift+R  Run operating point\n$modifier+Shift+S  Export CSV\n$modifier+1–4  Switch tabs\n$modifier+W  Close this window\nTab / Shift+Tab  Move between controls\nReturn  Locate the selected device, calculate sizing, or apply the focused form\nEscape in search  Clear filters\n\nThe Sort menu is a keyboard-accessible alternative to clicking table headers. View data opens a table of the plotted lookup values."
     text $w.help -wrap word -height 8 -width 50; text_style $w.help
     $w.help insert end $help; $w.help configure -state disabled

@@ -1,0 +1,28 @@
+name: Native Tcl and GUI tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux-gui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install native GUI dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-tk python3-pil xvfb xauth tk fonts-dejavu-core
+      - name: Require the full suite, including GUI tests
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' /usr/bin/python3 tools/run_tests.py --require-gui
+      - name: Run native widget smoke test
+        run: xvfb-run -a wish tests/gui_smoke.tcl
+      - name: Capture GUI previews
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' /usr/bin/python3 tools/capture_screenshots.py --audit --output-dir build/screenshots
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: native-gui-previews
+          path: build/screenshots
+          if-no-files-found: warn

@@ -114,7 +114,7 @@ proc ::analog_lens::shortcut {action} {
 }
 proc ::analog_lens::install_shortcuts {} {
     variable window
-    set mod [expr {[tk windowingsystem] eq "aqua" ? "Command" : "Control"}]
+    set mod Control
     foreach {key action} {f find o load r refresh Shift-R run Shift-S export w close} {
         bind $window <$mod-$key> [list ::analog_lens::shortcut $action]
     }
@@ -136,10 +136,11 @@ proc ::analog_lens::layout_toolbar {} {
     set w $window.root.tools
     if {![winfo exists $w]} {return}
     set width [expr {[winfo width $window.root]-40}]
-    flow_controls $w {run load refresh export log} $width
+    flow_controls $w {run cancel load refresh export log session} $width
     set filters $window.tabs.op.filters
     if {[winfo exists $filters]} {flow_controls $filters {find search clear review follow} [expr {max(300,$width-24)}]}
     $window.root.head.pdk configure -wraplength [expr {max(180,int($width*0.55))}]
+    fit_lookup_layout
 }
 proc ::analog_lens::flow_controls {w names width} {
     set used 0; set row 0; set col 0
@@ -175,12 +176,13 @@ proc ::analog_lens::toggle_sizing {} {
     if {$sizing_visible} {
         pack $w.size -before $w.note -side bottom -fill x -pady {10 0}
     } else {pack forget $w.size}
+    fit_lookup_layout
     schedule_plot
 }
 proc ::analog_lens::select_metric {} {
     variable lut_metric_label; variable lut_y
     set lut_y [dict get [dict create {Intrinsic gain} gain {Estimated fT} ft {Current density} density] $lut_metric_label]
-    schedule_plot
+    reset_plot
 }
 proc ::analog_lens::data_dialog {} {
     variable window; variable lut_rows; variable lut_slice; variable lut_y; variable lut_source; variable slice_label
@@ -205,15 +207,15 @@ proc ::analog_lens::data_dialog {} {
     grid $t -row 0 -column 0 -sticky nsew; grid $w.root.table.y -row 0 -column 1 -sticky ns
     grid $w.root.table.x -row 1 -column 0 -sticky ew
     grid columnconfigure $w.root.table 0 -weight 1; grid rowconfigure $w.root.table 0 -weight 1
-    dict for {length points} [lut_curves $lut_rows $lut_slice $lut_y] {
-        foreach point $points {$t insert {} end -values [list $length {*}$point]}
+    dict for {length points} [visible_curves] {
+        foreach point $points {$t insert {} end -values [list $length [lindex $point 0] [lindex $point 1]]}
     }
     ttk::frame $w.root.actions -style AL.TFrame
     pack $w.root.actions -before $w.root.table -side bottom -fill x -pady {12 0}
     pack [button $w.root.actions.copy {Copy table} [list ::analog_lens::copy_table $t]] -side left
     pack [button $w.root.actions.close Close [list destroy $w]] -side right
     bind $w <Escape> [list destroy $w]
-    set mod [expr {[tk windowingsystem] eq "aqua" ? "Command" : "Control"}]
+    set mod Control
     bind $w <$mod-w> [list destroy $w]
     focus $t
 }

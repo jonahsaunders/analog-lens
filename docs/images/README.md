@@ -47,3 +47,5 @@ xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/capture_screenshots.py \
 After regenerating, check all images for clipped labels and curves before
 committing them. These captures demonstrate widget rendering; they do not
 replace the validation described in `PDK_SUPPORT.md` and `VALIDATION.md`.
+
+The v0.3 captures include separate lookup filters, saved-baseline selection, and `environment-check.png`. The environment-check image demonstrates diagnostics in the capture environment; it is not a successful IIC validation report.

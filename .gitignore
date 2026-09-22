@@ -1,2 +1,5 @@
 __pycache__/
+build/
+iic-validation/
+iic-checks/
 *.py[cod]

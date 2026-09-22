@@ -88,15 +88,31 @@ These additional captures document the rest of the interface.
 
 ![Run-log window with synthetic explanatory text, tail following, copying, and a close action.](images/run-log.png)
 
-## Remaining platform validation
+## v0.3 IIC workflow follow-up
+
+The supported target is now explicitly **IIC-OSIC-TOOLS on Linux/X11**. Native Mac/Windows validation is outside the requested scope.
+
+Implemented after the original audit:
+
+- Linux cancellation with process identity checks, timed escalation, elapsed time, and preserved prior results.
+- Named baselines and versioned `.alsession` files for targets, lookup choices, layout, and comparisons.
+- Added/removed device rows and current, headroom, gain, and estimated fT changes, with CSV export.
+- User-declared conditions, raw-file/schematic provenance, comparison mismatch notices, and hidden mismatched chart overlays.
+- Separate lookup filters, length selection, sample inspection, zoom/reset, and SVG export.
+- Environment diagnostics with copyable recovery instructions.
+- Required native GUI CI and a separate IIC integration harness/job.
+
+65 local tests and the native smoke test pass. Chart controls and sizing remain accessible at 900×640 and with larger text; compact sizing mode explicitly switches back to the chart when sizing is hidden. See [the current validation record](../VALIDATION.md) for integration evidence and boundaries.
+
+## Original v0.2 validation boundaries (updated status)
 
 | Area | Boundary / follow-up |
 |---|---|
-| macOS Aqua and VoiceOver | Not available in this environment. Verify focus order, Command bindings, announced labels/values, and native dialog behavior on an actual Mac. A standard Tk widget alone is not proof of screen-reader compatibility. |
-| Live xschem and PDKs | GUI tests use contract fixtures. Validate integration, selection highlighting, annotation placement, actual ngspice execution, and PDK data in IIC-OSIC-TOOLS. |
-| OS appearance and accessibility changes | Colors/fonts are derived when the window opens. Close/reopen after changing the host theme or font settings. Automatic macOS appearance changes, Increase Contrast, Full Keyboard Access, and reduced-motion preferences still need platform testing. |
+| macOS Aqua and VoiceOver | Outside the IIC-only target scope. |
+| Live xschem and PDKs | An automated IIC integration harness now exercises these workflows. Consult its run report for actual validation results. |
+| Host theme/font changes | Colors and fonts derive from the active IIC Tk theme when the window opens. Reopen the window after changing those settings. |
 | Localization | English labels and units were reviewed. Translations and right-to-left layout have not been implemented or tested. |
-| Very long runs | Progress is indeterminate because ngspice does not provide a trustworthy completion fraction here. A cancellation control is deferred until process termination can be validated across supported hosts. Closing the analysis window does not terminate an ongoing run. |
+| Very long runs | v0.3 adds cancellation and elapsed time for Linux processes. Progress remains indeterminate. Closing the window lets the run continue. |
 
 ## Apple sources
 

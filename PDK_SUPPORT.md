@@ -47,3 +47,9 @@ The build environment did not contain xschem, ngspice, an X server, or the insta
 - SKY130 symbol conventions: https://github.com/StefanSchippers/xschem_sky130/blob/main/sky130_fd_pr/nfet_01v8.sym
 
 No foundry models, PDK files, proprietary data, or third-party lookup tables are distributed with this extension.
+
+## Automated IIC validation (v0.3)
+
+Run `xvfb-run -a python3 tools/validate_iic.py --require-all` inside IIC-OSIC-TOOLS, or `bash tools/run_iic_container.sh` from a Docker host. The harness uses installed vendor symbols/models, checks NMOS and PMOS metrics, and exercises actual xschem hierarchy, highlighting, cross-probing and annotation workflows. It saves logs and raw results and fails if any required PDK is absent or fails.
+
+See the [validation record](VALIDATION.md) and [integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) for the tested environment and results. The presence of the harness does not itself establish that a PDK/image passed.

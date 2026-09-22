@@ -13,6 +13,10 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tkinter
+import hashlib
+
+ROOT = Path(__file__).resolve().parents[1]
 
 PDKS = ('sky130A', 'gf180mcuD', 'ihp-sg13g2', 'ihp-sg13cmos5l')
 
@@ -54,12 +58,15 @@ def main():
     p.add_argument('--pdk-root',type=Path,default=Path(os.environ.get('PDK_ROOT','/foss/pdks')))
     p.add_argument('--output',type=Path,default=Path('iic-checks'))
     p.add_argument('--timeout',type=int,default=90)
+    p.add_argument('--require-all', action='store_true', help='Fail if any supported PDK is missing.')
     args=p.parse_args()
     binary=shutil.which('ngspice')
     if not binary:
         p.exit(2,'ngspice was not found. Run this diagnostic inside IIC-OSIC-TOOLS.\n')
     out=(args.output/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')).resolve();out.mkdir(parents=True)
     results=[]
+    tcl = tkinter.Tcl()
+    tcl.call('source', str(ROOT / 'analog_lens.tcl'))
     for pdk in PDKS:
         base=(args.pdk_root/pdk).resolve()
         if not base.is_dir():
@@ -84,12 +91,27 @@ def main():
                 if missing:raise ValueError('Missing or nonfinite parameters: '+', '.join(missing))
                 ids,gm,gds=(values[path+'['+param+']'] for param in (current,'gm','gds'))
                 if abs(ids)<1e-12 or gm<=0 or gds<=0:raise ValueError('Invalid bias or nonpositive small-signal parameters.')
-                results.append(dict(pdk=pdk,device=polarity+'mos',status='passed',gmid=abs(gm/ids),intrinsic_gain=gm/gds,raw=str(raw)))
-            except (OSError,ValueError,subprocess.TimeoutExpired) as exc:
+                fields = dict(id=ids, gm=gm, gds=gds, vds=values[path+'[vds]'],
+                              vdsat=values[path+('[vdss]' if psp else '[vdsat]')], cgg=values[path+'[cgg]'])
+                if psp:
+                    fields.update(cgsol=values[path+'[cgsol]'], cgdol=values[path+'[cgdol]'])
+                family = 'ihp' if psp else 'sky130' if pdk.startswith('sky') else 'gf180'
+                computed = tcl.call('::analog_lens::metrics', tcl.call('dict', 'create', *[v for pair in fields.items() for v in pair]), family, polarity+'mos')
+                capacitance = fields['cgg'] + (fields['cgsol']+fields['cgdol'] if psp else 0)
+                expected_metrics = dict(gmid=abs(gm/ids), gain=gm/gds, ro=1/gds,
+                                        headroom=abs(fields['vds'])-abs(fields['vdsat']))
+                if capacitance > 0: expected_metrics['ft'] = gm/(2*math.pi*capacitance)
+                for key, expected_value in expected_metrics.items():
+                    actual = float(tcl.call('dict', 'get', computed, key))
+                    if not math.isclose(actual, expected_value, rel_tol=1e-9, abs_tol=1e-15):
+                        raise ValueError(f'Extension disagrees with ngspice-derived {key}: {actual} vs {expected_value}')
+                results.append(dict(pdk=pdk,device=polarity+'mos',status='passed',metrics=expected_metrics,
+                                    raw=str(raw),deck_sha256=hashlib.sha256(deck.read_bytes()).hexdigest()))
+            except (OSError,ValueError,subprocess.TimeoutExpired,tkinter.TclError) as exc:
                 results.append(dict(pdk=pdk,device=polarity+'mos',status='failed',error=str(exc)))
     report=out/'report.json';report.write_text(json.dumps(results,indent=2)+'\n')
     for r in results:print(r['pdk'],r.get('device',''),r['status'],r.get('error',''))
     print('Report:',report)
-    return 1 if any(r['status']=='failed' for r in results) else 0 if any(r['status']=='passed' for r in results) else 2
+    return 1 if any(r['status']=='failed' or (args.require_all and r['status']=='not-installed') for r in results) else 0 if any(r['status']=='passed' for r in results) else 2
 
 if __name__=='__main__':raise SystemExit(main())

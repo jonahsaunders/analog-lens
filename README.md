@@ -2,7 +2,11 @@
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu and a resizable analysis window inside xschem's process. No browser, server, account, or Python service is required.
 
-Version 0.2.0 adds a GUI usability update informed by Apple's Human Interface Guidelines. The numerical engine, adapters, data parsing, xschem API contracts, and native GUI interactions have automated tests. The screenshots below show the real Tk interface with synthetic fixtures. Actual xschem/PDK simulations and GUI validation inside xschem require an IIC-OSIC-TOOLS installation; those were not available in the build environment. See `PDK_SUPPORT.md` for the exact support boundary and the [GUI audit](docs/GUI_AUDIT.md) for findings, changes, and platform validation limits.
+Version **0.3.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
+
+This release adds named baselines and saved sessions, safe simulation cancellation, environment diagnostics, richer comparisons, lookup filters, chart inspection/zoom/SVG export, and recorded result conditions. The interface retains the usability principles from the [GUI audit](docs/GUI_AUDIT.md).
+
+**Validation:** 65 local tests and the native Tk smoke test pass on Linux/Tk 8.6. The new [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) runs actual xschem and ngspice against installed PDKs; consult its report for the tested image and results. Local fixtures and screenshots do not establish PDK validation. See [VALIDATION.md](VALIDATION.md) and [PDK_SUPPORT.md](PDK_SUPPORT.md).
 
 ## Interface preview
 
@@ -14,17 +18,19 @@ See the [gm/Id explorer preview](#gmid-explorer) below. [Screenshot sources and 
 
 The inspector and help text scroll, numeric columns sort in both directions, and search filters have a clear empty state. **Run log** updates while ngspice runs. **View data** in the explorer opens a copyable table of lookup values. The extension keeps the host's ttk theme and uses its system fonts; it does not change xschem's global theme.
 
-| Action | Linux / Windows | macOS binding |
-|---|---|---|
-| Find a device | Ctrl+F | Command+F |
-| Load results | Ctrl+O | Command+O |
-| Refresh | Ctrl+R | Command+R |
-| Run operating point | Ctrl+Shift+R | Command+Shift+R |
-| Export CSV | Ctrl+Shift+S | Command+Shift+S |
-| Switch tabs | Ctrl+1–4 | Command+1–4 |
-| Close Analog Lens | Ctrl+W | Command+W |
+| Action | IIC shortcut |
+|---|---|
+| Find a device | Ctrl+F |
+| Load results | Ctrl+O |
+| Refresh | Ctrl+R |
+| Run operating point | Ctrl+Shift+R |
+| Export CSV | Ctrl+Shift+S |
+| Switch tabs | Ctrl+1–4 |
+| Close Analog Lens | Ctrl+W |
+| Inspect chart samples | Left / Right while chart has focus |
+| Zoom / reset chart | + / − / Home while chart has focus |
 
-Shortcuts apply while the Analog Lens window has focus. The **Sort** menu offers keyboard access to table sorting. Use Tab / Shift+Tab between controls and Return in a numeric form to apply it. macOS bindings are implemented but have not been exercised on Aqua/VoiceOver.
+Shortcuts apply within the extension window. Use Tab / Shift+Tab to move between controls. The **Sort** menu provides keyboard sorting, and **View data** provides a numeric chart alternative.
 
 ## Install in IIC-OSIC-TOOLS
 
@@ -56,18 +62,32 @@ Requirements: xschem with Tcl/Tk 8.6 or newer and the documented `xschem raw` AP
 ## Everyday workflow
 
 1. Open your top-level simulation testbench in xschem.
-2. Click **Operating point**. The extension traverses schematic hierarchy, generates parameter saves, netlists to a new file, and runs ngspice asynchronously. It preserves source schematics and existing simulation blocks.
+2. Click **Run operating point**. The extension traverses schematic hierarchy, generates parameter saves, netlists to a new file, and runs ngspice asynchronously. It preserves source schematics and existing simulation blocks.
 3. Descend into the circuit. The table follows the current hierarchy. Select a transistor in xschem or the table to see its operating point and derived metrics.
 4. Use **Locate in schematic** for cross-probing, or **Color by gm/Id** to highlight devices below, within, or above your targets using xschem palette layers 8, 4, and 6. This adds highlights; use xschem's Highlight menu to clear them. **Place annotation** places an optional annotation symbol; click in the schematic to position it. This is the only analysis action that intentionally adds a schematic object.
-5. **Keep current results as baseline**, edit the circuit, rerun, and inspect **Compare runs**. Export CSV to retain a report.
+5. **Keep baseline**, edit the circuit, rerun, and inspect **Compare runs**. Export CSV to retain a report.
 
 The inspector displays Id/Ic, gm, gds/go, gm/Id, intrinsic gain, ro, Vgs, Vds, model Vth/Vdsat, model headroom, Cgg, and estimated fT when the required vectors exist. Missing results are `—`; they are never silently replaced with zero. Width, length, finger count, and multiplier are shown as entered, without guessing units or double-counting multiplicity.
 
 The device list is scoped to the currently open hierarchy level. To see transistors in a subcircuit, descend into that subcircuit. The OP run itself gathers saves recursively from schematic-backed subcircuits. Arbitrary external SPICE subcircuits, encrypted models, unsupported primitive wrappers, and multi-device composite models may require an adapter or a separately generated raw file.
 
+### Save work and compare runs
+
+Enter a name in **Compare runs**, then click **Keep baseline**. Each baseline retains its device results, hierarchy, and provenance; duplicate names receive a suffix. Choose an earlier baseline from the selector. Comparisons show matched, added, and removed devices, with gm/Id, gain, current, headroom, and estimated fT values and changes. **Export comparison…** includes unrounded values and metadata.
+
+Use **Session → Save session…** to save an `.alsession` file in your mounted designs directory. It stores named baselines, targets, lookup-file selection, sizing inputs, sorting, and window/pane size. **Open session…** restores it. Load or run current results separately. Lookup data is referenced by path; if that file has moved, load it again. Session files are parsed as data, never executed. Changes are saved explicitly; closing xschem does not autosave them.
+
+**Setup & help → Result conditions** records optional corner, temperature, Vds, and Vsb values for comparisons and chart overlays. These are user-declared and do not change the simulator. Unknown conditions remain unverified; known mismatches are shown, and mismatched lookup overlays are hidden. A single declared bias describes the intended comparison condition, not every transistor's measured terminal voltage.
+
+### Run control and setup checks
+
+**Cancel** sends a stop request only to the ngspice process started by this extension. If it is still running after two seconds, the extension terminates that same process, checking its Linux process identity first. Partial results are never loaded after cancellation. Previous loaded results stay available. Closing the window lets the run continue; reopen Analog Lens to inspect or cancel it.
+
+Elapsed time and the live run log remain available during simulation. **Session → Check environment** checks ngspice, the PDK/init paths, the simulation directory, the testbench, and xschem's results API. These checks diagnose setup; the integration harness below verifies real simulation behavior.
+
 ### Existing simulation flows
 
-You can use **Load results…** with `op`, `dc`, or `tran`. Set **Sample** and **Dataset** to select a saved point (zero-based). The first version does not interpolate between samples or follow waveform cursor B. Load a top-level raw file at the top level, then descend, so xschem's raw hierarchy mapping is correct.
+You can use **Load results…** with `op`, `dc`, or `tran`. Set **Sample** and **Dataset** to select a saved point (zero-based). The extension does not interpolate between samples or follow waveform cursor B. Load a top-level raw file at the top level, then descend, so xschem's raw hierarchy mapping is correct.
 
 **Operating point** intentionally replaces top-level `.control` blocks and top-level analyses in its disposable netlist. It retains models, includes, sources, and `.param` statements. If your bias/model setup relies on `alter`, `alterparam`, `pre_osdi`, `set`, or other commands inside `.control`, use your own simulation and **Load results**, or move that required setup into the normal model/environment setup. Included files with their own control blocks are not rewritten. Run logs and generated decks stay in xschem's simulation directory.
 
@@ -79,7 +99,7 @@ Changing tabs or hierarchy while ngspice runs will not load results into the wro
 
 **gm/Id explorer.** Native Tk capture using `examples/lookup-template.csv`, labeled `DEMO_ONLY`. The curves and sizing estimate are illustrative synthetic data, not a characterized PDK.
 
-Load measured CSV lookup data. It groups by PDK, model, corner, temperature, Vds, Vsb, and total reference width. Within that fixed slice, each channel length is a separate curve. You can plot intrinsic gain, estimated fT, or current density against gm/Id. When a matching model is selected in the inspector, its actual gain/fT operating point can appear as a dot; verify the circuit's corner, temperature and bias yourself.
+Load measured CSV lookup data. It groups by PDK, model, corner, temperature, Vds, Vsb, and total reference width. Within that fixed slice, each channel length is a separate curve. Select PDK, model, corner, temperature, Vds, Vsb, and reference width separately. Choose **All** lengths or one length. Plot intrinsic gain, estimated fT, or current density against gm/Id. Click sample markers or use Left/Right to inspect values; use the zoom controls and **Reset view**. **Export SVG…** saves the current chart view with source/condition metadata. When a matching model is selected in the inspector, its actual gain/fT operating point can appear as a dot; verify the circuit's corner, temperature and bias yourself.
 
 Required columns:
 
@@ -95,7 +115,7 @@ Required columns:
 
 The file in `examples/lookup-template.csv` is **illustrative synthetic data**, explicitly labeled `DEMO_ONLY`. It is a format example, not a characterized PDK or a valid sizing database. Replace it with your characterization data.
 
-Enable **Sizing estimate** to reveal the sizing form. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. Sizing does not automatically modify the schematic. There is no automatic PDK characterization in this version.
+Enable **Sizing estimate** to reveal the sizing form. In compact windows it replaces the chart area; hide it to return to the chart. **View data** remains available. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. Sizing does not automatically modify the schematic. There is no automatic PDK characterization in this version.
 
 ### Import existing MAT lookup data
 
@@ -130,7 +150,7 @@ These tests execute the real Tcl numerical/adapter logic through Python's Tcl in
 The native GUI interaction tests skip without an X11 display. To run the complete suite, including keyboard input, sorting, validation, minimum-size layout, and dark-theme checks:
 
 ```sh
-xvfb-run -a -s '-screen 0 1440x1000x24' python3 -m unittest discover -s tests -v
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/run_tests.py --require-gui
 ```
 
 For the real native Tk widget/event smoke test in an IIC environment with `wish` and `xvfb-run`:
@@ -139,7 +159,23 @@ For the real native Tk widget/event smoke test in an IIC environment with `wish`
 xvfb-run -a wish tests/gui_smoke.tcl
 ```
 
-For installed-PDK ngspice checks, use `python3 tools/check_iic.py --output ./iic-checks`. This writes small test decks and a report and fails if an installed supported PDK fails. It also reports unavailable PDKs explicitly.
+The required test runner fails if native GUI tests are skipped. GitHub Actions also captures previews for review.
+
+For complete validation **inside IIC-OSIC-TOOLS**:
+
+```sh
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/validate_iic.py --require-all --output ./iic-validation
+```
+
+This runs the native suite, real NMOS/PMOS ngspice checks, and actual xschem GUI checks for top-level and hierarchical circuits, cross-probing, highlighting, annotation placement, and session save. Exported metrics are compared with raw simulator values. Reports retain generated decks, raw data, logs, and the IIC version. `--require-all` fails if any supported PDK is missing.
+
+From a host with Docker (or `CONTAINER_ENGINE=podman`):
+
+```sh
+bash tools/run_iic_container.sh
+```
+
+The default image is `hpretl/iic-osic-tools:2026.08`; override `ANALOG_LENS_IIC_IMAGE` to test a different tag/digest. The resolved image information and reports are saved under `build/iic`. This downloads a large image; allow at least 20 GB of free disk space. No PDK files are modified.
 
 ## Remove
 

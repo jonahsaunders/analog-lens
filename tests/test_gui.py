@@ -3,6 +3,8 @@ from pathlib import Path
 import os
 import tkinter as tk
 import unittest
+import tempfile
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 W = '.analog_lens'
@@ -171,7 +173,7 @@ class NativeGUI(unittest.TestCase):
         self.set('target_gmid', '16')
         self.call('close_window')
         self.call('show')
-        self.assertTrue(self.c(W + '.tabs.lut.slice', 'cget', '-values'))
+        self.assertTrue(self.c(W + '.tabs.lut.filters.model.value', 'cget', '-values'))
         self.assertEqual(len(self.c(W + '.tabs.lut.size.length', 'cget', '-values')), 2)
         self.assertEqual(str(self.get('target_gmid')), '16')
         traces = self.c('trace', 'info', 'variable', '::analog_lens::target_gmid')
@@ -235,15 +237,90 @@ class NativeGUI(unittest.TestCase):
                            luminance(self.c('dict', 'get', colors, bg))])
             self.assertGreaterEqual((b + .05) / (a + .05), 4.5, (fg, bg))
 
+    def test_session_restores_baselines_lookup_targets_and_layout(self):
+        self.load_lut()
+        self.set('baseline_name', 'Nominal')
+        self.call('keep_baseline')
+        self.c('wm', 'geometry', W, '1100x780')
+        self.settle()
+        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+            path = str(Path(temp) / 'run.alsession')
+            self.call('save_session', path)
+            self.set('baselines', '')
+            self.set('baseline_choice', '')
+            self.set('lut_rows', '')
+            self.set('target_gmid', 8)
+            self.call('open_session', path)
+            self.settle()
+            self.assertEqual(self.get('baseline_choice'), 'Nominal')
+            self.assertEqual(float(self.get('target_gmid')), 15)
+            self.assertEqual(len(self.get('lut_rows')), 6)
+            self.assertEqual(int(self.c('winfo', 'width', W)), 1100)
+            self.assertIn('matched', self.get('compare_summary'))
+
+    def test_lookup_filter_curve_inspection_zoom_and_svg(self):
+        self.load_lut()
+        self.c(W + '.tabs', 'select', W + '.tabs.lut')
+        self.set('lut_length', '0.3')
+        self.call('reset_plot')
+        self.settle()
+        self.assertEqual(len(self.get('plot_points')), 3)
+        self.call('step_plot_point', 1)
+        self.assertIn('L = 0.3', self.get('plot_point_text'))
+        before = tuple(map(float, self.get('plot_bounds')))
+        self.call('zoom_plot', .7)
+        self.settle()
+        after = tuple(map(float, self.get('plot_bounds')))
+        self.assertLess(after[1] - after[0], before[1] - before[0])
+        self.call('reset_plot')
+        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+            path = Path(temp) / 'chart.svg'
+            self.call('export_plot_svg', str(path))
+            root = ET.parse(path).getroot()
+            self.assertEqual(root.tag, '{http://www.w3.org/2000/svg}svg')
+            self.assertIn('DEMO', path.read_text())
+            self.assertTrue(root.findall('{http://www.w3.org/2000/svg}polyline'))
+        self.call('data_dialog')
+        tree = W + '.data.root.table.tree'
+        rows = self.c(tree, 'children', '')
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(len(self.c(tree, 'item', row, '-values')) == 3 for row in rows))
+
+    def test_lookup_known_mismatch_hides_overlay(self):
+        self.load_lut()
+        self.app.tk.eval('dict set ::analog_lens::result_metadata corner ss')
+        self.assertIn('Overlay hidden', self.call('lookup_provenance_warning'))
+
+    def test_environment_report_is_copyable(self):
+        self.call('check_environment')
+        self.c(W + '.environment.actions.copy', 'invoke')
+        self.assertIn('IIC-OSIC-TOOLS readiness', self.c('clipboard', 'get'))
+        self.assertIn('Result API — Ready', self.get('environment_report'))
+
+    def test_comparison_export_contains_conditions_and_added_devices(self):
+        self.call('keep_baseline')
+        self.app.tk.eval('set r [lindex $::analog_lens::records 0]; dict set r name M3; lappend ::analog_lens::records $r')
+        self.call('render_compare')
+        self.assertIn('1 added', self.get('compare_summary'))
+        with tempfile.TemporaryDirectory(dir=ROOT.parent) as temp:
+            path = Path(temp) / 'comparison.csv'
+            self.call('export_comparison', str(path))
+            import csv
+            with path.open() as file:
+                rows = list(csv.DictReader(file))
+            self.assertEqual(rows[-1]['state'], 'Added')
+            self.assertEqual(rows[-1]['baseline_id'], '')
+            self.assertIn('captured_at', rows[0]['baseline_metadata'])
+
     def check_actions_visible(self):
         self.c('wm', 'geometry', W, '900x640+0+0')
         self.set('sizing_visible', 1)
         self.call('toggle_sizing')
         actions = {
             'op': ['.filters.follow', '.point.color', '.panes.detail.locate', '.panes.detail.annotate', '.panes.detail.copy'],
-            'lut': ['.tools.load', '.tools.data', '.size.calc', '.size.gm'],
-            'compare': ['.keep', '.copy'],
-            'setup': ['.apply', '.targets.current_floor'],
+            'lut': ['.tools.load', '.tools.data', '.size.calc', '.size.gm', '.filters.model.value'],
+            'compare': ['.keep', '.copy', '.saved.export'],
+            'setup': ['.apply', '.targets.current_floor', '.environment', '.conditions.apply'],
         }
         for tab, paths in actions.items():
             self.c(W + '.tabs', 'select', W + '.tabs.' + tab)
@@ -264,6 +341,11 @@ class NativeGUI(unittest.TestCase):
                     self.assertLessEqual(y + height, 640)
                     self.assertGreaterEqual(height, 20)
                     self.assertGreaterEqual(width, int(self.c('winfo', 'reqwidth', w)))
+        self.c(W + '.tabs', 'select', W + '.tabs.lut')
+        self.set('sizing_visible', 0)
+        self.call('toggle_sizing')
+        self.settle()
+        self.assertTrue(self.c('winfo', 'ismapped', W + '.tabs.lut.charttools.export'))
 
 
 if __name__ == '__main__':

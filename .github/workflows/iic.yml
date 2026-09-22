@@ -1,0 +1,28 @@
+name: IIC-OSIC-TOOLS integration
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'analog_lens.tcl'
+      - 'lib/**'
+      - 'symbols/**'
+      - 'tests/**'
+      - 'tools/**'
+      - '.github/workflows/iic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  iic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate actual xschem and all supported PDKs
+        run: bash tools/run_iic_container.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: iic-integration-report
+          path: build/iic
+          if-no-files-found: error
