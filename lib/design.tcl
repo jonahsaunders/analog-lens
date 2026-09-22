@@ -117,7 +117,8 @@ proc ::analog_lens::apply_size_plan {{rerun 0}} {
     if {$::analog_lens::run_channel ne {}} {error {Wait for the current simulation.}}
     if {[context] ne [get $size_plan context]} {error {The schematic changed. Preview again.}}
     set owner [get $size_plan owner]
-    if {[xschem selected_set] ne [list $owner] || [xschem getprop instance $owner] ne [get $size_plan before]} {error {Selection or geometry changed. Preview again.}}
+    set selection [xschem selected_set]
+    if {[llength $selection] != 1 || [lindex $selection 0] ne $owner || [xschem getprop instance $owner] ne [get $size_plan before]} {error {Selection or geometry changed. Preview again.}}
     if {[raw_signature $::analog_lens::lut_file] ne [get $size_plan lookup] || $::analog_lens::lut_slice ne [get $size_plan slice] ||
         [list $::analog_lens::target_length $::analog_lens::target_gmid $::analog_lens::target_gm_u] ne [get $size_plan targets]} {error {Lookup data or targets changed. Preview again.}}
     if {$rerun && [xschem get currsch] != 0} {error {Apply here, save the subcircuit, and return to the top-level testbench to rerun.}}

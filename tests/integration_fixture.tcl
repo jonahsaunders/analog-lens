@@ -7,6 +7,9 @@ namespace eval ::hostfixture {
 rename xschem fixture_xschem
 dict set ::mock::vectors v(vd) 0.9
 proc xschem {command args} {
+    # The real C API braces instance names even when Tcl's canonical list
+    # representation would omit braces. Consumers must compare list elements.
+    if {$command eq "selected_set" && [llength $::mock::selection] == 1} {return "\{[lindex $::mock::selection 0]\}"}
     if {$command eq "instance_net"} {return [dict get {d vd s 0 b 0} [string tolower [lindex $args 1]]]}
     if {$command eq "resolved_net"} {return [lindex $args 0]}
     if {$command eq "translate" && [lindex $args 0] eq "M1"} {return [dict get $::hostfixture::props model]}
