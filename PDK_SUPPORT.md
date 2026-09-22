@@ -17,18 +17,20 @@ Support means the MOS adapter and GUI workflow are implemented. **It does not me
 
 ## Validated in IIC-OSIC-TOOLS 2026.08
 
-The [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35728713544) exercised installed vendor models and symbols:
+The [passing integration run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) exercised installed vendor models and symbols:
 
 | PDK | NMOS / PMOS model pair | Tested behavior |
 |---|---|---|
-| SKY130A | `nfet_01v8` / `pfet_01v8` | Real OP metrics for both polarities; NMOS top-level and hierarchical GUI workflows |
+| SKY130A | `nfet_01v8` / `pfet_01v8` | Real OP metrics and two-length characterization for both polarities; complete NMOS GUI workflow |
 | GF180MCU-D | `nfet_03v3` / `pfet_03v3` | Same |
 | IHP SG13G2 | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
 | IHP SG13CMOS5L | `sg13_lv_nmos` / `sg13_lv_pmos` | Same, including PSP/OSDI and overlap capacitances |
 
-All eight simulator checks and four live xschem integrations passed. GUI checks included results loading, hierarchy, cross-probing, highlighting, annotation placement, session saving, and exported metrics compared with raw data. The container also passed all 65 automated tests without skips. See [VALIDATION.md](VALIDATION.md) for the image digest, numerical tolerances, source commit, and retained evidence.
+All eight simulator checks and four live xschem integrations passed. GUI checks included results loading, hierarchy, cross-probing, highlighting, annotation placement, the embedded sidebar, native simulations, source freshness, cursor tracking, sizing Apply/Undo, real characterization and automatic lookup loading, project restoration, and twelve exported reports compared with raw data. The container also passed all 85 automated tests without skips. See [VALIDATION.md](VALIDATION.md) for the image digest, numerical tolerances, source commit, and retained evidence.
 
 Fixture and native tests additionally cover numerical guards, adapter naming, ambiguous wrappers, CSV/LUT validation, sizing math, hierarchy recovery, installer preservation, keyboard/layout behavior, comparisons, sessions, provenance, and Linux cancellation. These checks complement the real PDK simulations.
+
+Geometry changes and characterization use the model pairs above. Sizing previews normalize to one finger and one parallel copy using each PDK's W/L and multiplicity conventions. Parameterized dimensions, arrays and other models are refused. The [integrated workflow guide](docs/INTEGRATION.md) describes voltage/corner limits and geometry handling.
 
 ## Coverage boundaries
 
@@ -49,7 +51,7 @@ Check your own design in the IIC VNC/X11 desktop and compare its particular mode
 
 No foundry models, PDK files, proprietary data, or third-party lookup tables are distributed with this extension.
 
-## Automated IIC validation (v0.3)
+## Automated IIC validation (v0.4)
 
 Run `xvfb-run -a python3 tools/validate_iic.py --require-all` inside IIC-OSIC-TOOLS, or `bash tools/run_iic_container.sh` from a Docker host. The harness uses installed vendor symbols/models, checks NMOS and PMOS metrics, and exercises actual xschem hierarchy, highlighting, cross-probing and annotation workflows. It saves logs and raw results and fails if any required PDK is absent or fails.
 

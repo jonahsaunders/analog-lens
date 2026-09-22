@@ -137,3 +137,5 @@ not treated as Tcl/Tk requirements.
 Added the embedded inspector, project settings dialog, characterization form/log, and geometry preview. The full analysis window remains available for larger plots and tables. Its lookup actions now wrap at reduced width, including with 14-point system fonts. Main inspector metrics scroll independently of the run/actions area.
 
 The 85-test local suite covers the new project/session lifecycle, corrupt autosave preservation, native simulation completion and callback retention, nearest-sample cursor tracking, source provenance, stale sizing-preview rejection, one-step Undo, measured-bias mismatch, real subprocess cancellation, and the startup-before-window-layout regression. Real IIC evidence and screenshots are recorded in [VALIDATION.md](../VALIDATION.md).
+
+The complete v0.4 workflow passed in [IIC run 35738760853](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) for all four installed PDKs. The embedded inspector, sizing preview and completed characterization captures were reviewed for legible text and accessible actions and are included in `docs/images/iic-*.png`.

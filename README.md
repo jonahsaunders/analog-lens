@@ -6,9 +6,13 @@ Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC des
 
 This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
 
-**Validation:** 85 tests and the native Tk smoke test pass locally. The [IIC integration workflow](https://github.com/jonahsaunders/analog-lens/actions/workflows/iic.yml) tests real simulation, characterization and all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact tested version, image and coverage.
+**Validation:** 85 tests, the native Tk smoke test, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) covers all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
 
 ## Interface preview
+
+![Analog Lens embedded in xschem, inspecting measured IHP SG13G2 transistor results in IIC-OSIC-TOOLS.](docs/images/iic-inspector.png)
+
+**Integrated inspector.** Actual xschem and ngspice results from the passing IIC run, using the installed IHP SG13G2 model. [Sizing preview](docs/images/iic-sizing-preview.png) and [completed real characterization](docs/images/iic-characterization.png) show the remaining integration dialogs.
 
 ![Analog Lens operating-point inspector showing M1 and M2, their gm/Id and intrinsic gain, and the selected device's detailed metrics.](docs/images/operating-point.png)
 
