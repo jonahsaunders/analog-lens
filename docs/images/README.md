@@ -23,6 +23,15 @@ The original inspector, sizing-preview and single-characterization captures come
 
 The three new v0.5 captures come from [passing run 35756609167](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167), code `09c9cec27dd97a263b7e0ae2ede7118de88bad61`, artifact `10707733195`. The artifact identifier and measured verification values are retained in the [v0.5 validation summary](../validation/iic-2026.08-v0.5.json). These are direct window captures without altered measurements.
 
+The v0.6 captures below come from [passing run 35762801866](https://github.com/jonahsaunders/analog-lens/actions/runs/35762801866), code `bc6a00bdbe36e5ea8f85e5a2229fb08c0ec35cf7`, artifact `10710882913`. They show setup, sizing, verification and characterization in the actual SKY130 NMOS workflow; none use synthetic data.
+
+| Image | View |
+|---|---|
+| `iic-sizing-workspace.png` | Unified targets, conditions, inline preview area and measured tolerance bands |
+| `iic-project-setup.png` | Optional setup checks; opening the wizard starts no simulation |
+| `iic-verification-chart.png` | Target/before/after table and two measured tolerance bands |
+| `iic-characterization-v06.png` | Installed corner choices and device-condition reuse controls |
+
 ## Regenerate synthetic previews
 
 On Linux, install Python with tkinter, Pillow with XCB support, Xvfb, xauth,

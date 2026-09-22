@@ -6,17 +6,21 @@ A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector s
 
 Version **0.6.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
-The **inspector sidebar** connects normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. The new [v0.5 workflow guide](docs/INTEGRATION_V05.md) covers measured verification, project history and characterization batches.
+The **inspector sidebar** connects normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. The [usability guide](docs/USABILITY_V06.md) explains the guided workspace; the [integration guide](docs/INTEGRATION_V05.md) covers project history and characterization batches.
 
-**v0.5 validation baseline in IIC 2026.08:** 104 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35756609167) includes measured sizing verification, archived results and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+**Validated in IIC 2026.08:** 118 tests, the native Tk smoke test, 24 direct model simulations, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35762801866) includes the unified workspace, condition reuse, optional setup, unit inputs, installed corner choices, visual verification and batch cache reuse. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
 
 ## Interface preview
 
+![Analog Lens Size & verify workspace with real SKY130 measurements and target tolerance bands.](docs/images/iic-sizing-workspace.png)
+
+**Size & verify.** Targets, inline geometry preview and measured verification in one workspace. [Optional project setup](docs/images/iic-project-setup.png) and [characterization with condition reuse](docs/images/iic-characterization-v06.png) are captured from the same real IIC run.
+
 ![Analog Lens embedded in xschem, inspecting measured IHP SG13G2 transistor results in IIC-OSIC-TOOLS.](docs/images/iic-inspector.png)
 
-**Integrated inspector.** Actual xschem and ngspice results from the passing IIC run, using the installed IHP SG13G2 model. [Sizing preview](docs/images/iic-sizing-preview.png) and [completed real characterization](docs/images/iic-characterization.png) show the remaining integration dialogs.
+**Integrated inspector.** An earlier validated IIC capture using the installed IHP SG13G2 model. The [sizing preview](docs/images/iic-sizing-preview.png) shows the geometry Apply and Undo workflow.
 
-![Measured sizing verification reporting target errors after a real SKY130 simulation.](docs/images/iic-sizing-verification.png)
+![Measured sizing verification reporting target errors after a real SKY130 simulation.](docs/images/iic-verification-chart.png)
 
 **Measured sizing verification.** A real target miss is reported with before/after values and signed errors. [Project results](docs/images/iic-project-results.png) retains runs and named baselines; [characterization batches](docs/images/iic-characterization-batch.png) reuse completed, verified conditions.
 

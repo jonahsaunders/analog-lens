@@ -15,11 +15,15 @@ pass tolerance; blank counts retain the current device's values.
 **Apply only** supports edits inside a subcircuit. Save through xschem and use
 **Go to parent** to return before rerunning. This action uses xschem's normal
 unsaved-change handling. One xschem Undo restores the complete geometry edit.
-Inputs, selection and source changes still invalidate a preview.
+Inputs, selection and source changes still invalidate a preview. If xschem clears
+the selection while loading a new raw file, select the transistor again to
+continue sizing; the measured verification remains visible.
 
 On narrow windows the two columns stack and scroll. Tab moves through controls
 and brings focused controls into view. The wheel scrolls the page; preview and
 log text have their own scrolling. Existing Ctrl+1–4 shortcuts keep their meaning.
+
+![Real SKY130 sizing workspace in IIC-OSIC-TOOLS.](images/iic-sizing-workspace.png)
 
 ## Reuse the selected device's conditions
 
@@ -60,6 +64,8 @@ setup receive IIC-specific guidance; the wizard does not install tools or modify
 PDK files. These checks establish readiness, not successful circuit simulation.
 The wizard opens only when requested.
 
+![Optional setup checks in the validated IIC environment.](images/iic-project-setup.png)
+
 ## Read verification at a glance
 
 The workspace and **Sizing verification** dialog show target, before, after and
@@ -73,6 +79,8 @@ and isolated OP log. Native simulator output remains in xschem's simulation
 console. A Pass covers the two requested device targets; circuit specifications
 and layout constraints need their own checks. A width-only change can legitimately
 miss gm/Id when the gate bias stays fixed.
+
+![Real measured targets, before/after values and tolerance bands.](images/iic-verification-chart.png)
 
 ## Units and field guidance
 

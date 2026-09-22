@@ -1,0 +1,1885 @@
+{
+  "date_utc": "2026-09-22",
+  "extension_version": "0.6.0",
+  "code_commit": "bc6a00bdbe36e5ea8f85e5a2229fb08c0ec35cf7",
+  "workflow_run": "https://github.com/jonahsaunders/analog-lens/actions/runs/35762801866",
+  "workflow_artifact_id": 10710882913,
+  "image": {
+    "tag": "hpretl/iic-osic-tools:2026.08",
+    "repo_digests": [
+      "hpretl/iic-osic-tools@sha256:3c371645b19c6f6564dc8c7b21e39ad1c1833d274fe5b85639afe1ba9d7987e7"
+    ],
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "versions": {
+    "iic": "2026.08",
+    "xschem": "XSCHEM V3.4.8RC",
+    "ngspice": "47",
+    "tk": "8.6.14"
+  },
+  "native_tests": {
+    "passed": 118,
+    "skipped": 0
+  },
+  "direct_metrics_relative_tolerance": 1e-09,
+  "multiplier_relative_tolerance": 1e-06,
+  "checks": [
+    {
+      "name": "native-suite",
+      "status": "passed"
+    },
+    {
+      "name": "ngspice-pdk-metrics",
+      "status": "passed"
+    },
+    {
+      "name": "sky130A-nmos-characterization",
+      "status": "passed",
+      "samples": 66
+    },
+    {
+      "name": "sky130A-pmos-characterization",
+      "status": "passed",
+      "samples": 57
+    },
+    {
+      "name": "sky130A-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 5.811827030743899e-08,
+          "relative_errors": {
+            "gm_S": 5.2645719561539295e-08,
+            "gds_S": 5.513297240966608e-08,
+            "id_A": 5.472551078966603e-09,
+            "gmid_1_V": 5.811827030743899e-08,
+            "intrinsic_gain": 2.4872528481267864e-09
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 5.811827030743899e-08,
+          "relative_errors": {
+            "gm_S": 5.2645719561539295e-08,
+            "gds_S": 5.513297240966608e-08,
+            "id_A": 5.472551078966603e-09,
+            "gmid_1_V": 5.811827030743899e-08,
+            "intrinsic_gain": 2.4872528481267864e-09
+          }
+        },
+        {
+          "file": "native.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 4.823657728802999e-08,
+          "relative_errors": {
+            "gm_S": 3.483480537358474e-08,
+            "gds_S": 1.3401772580579063e-08,
+            "id_A": 1.608784583329026e-08,
+            "gmid_1_V": 1.874695987336139e-08,
+            "intrinsic_gain": 4.823657728802999e-08
+          }
+        },
+        {
+          "file": "verification.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.3215565608515334e-07,
+          "relative_errors": {
+            "gm_S": 4.386469476536092e-08,
+            "gds_S": 8.829097297713417e-08,
+            "id_A": 2.1415553219661376e-08,
+            "gmid_1_V": 2.2449141989788757e-08,
+            "intrinsic_gain": 1.3215565608515334e-07
+          }
+        }
+      ]
+    },
+    {
+      "name": "gf180mcuD-nmos-characterization",
+      "status": "passed",
+      "samples": 126
+    },
+    {
+      "name": "gf180mcuD-pmos-characterization",
+      "status": "passed",
+      "samples": 123
+    },
+    {
+      "name": "gf180mcuD-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.6104159472618562e-07,
+          "relative_errors": {
+            "gm_S": 2.5352122401400834e-08,
+            "gds_S": 1.3568949430720068e-07,
+            "id_A": 9.676541767866809e-08,
+            "gmid_1_V": 7.141330238269461e-08,
+            "intrinsic_gain": 1.6104159472618562e-07
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.6104159472618562e-07,
+          "relative_errors": {
+            "gm_S": 2.5352122401400834e-08,
+            "gds_S": 1.3568949430720068e-07,
+            "id_A": 9.676541767866809e-08,
+            "gmid_1_V": 7.141330238269461e-08,
+            "intrinsic_gain": 1.6104159472618562e-07
+          }
+        },
+        {
+          "file": "native.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 6.315772993481517e-08,
+          "relative_errors": {
+            "gm_S": 4.140862319701455e-09,
+            "gds_S": 7.482345854015193e-10,
+            "id_A": 6.315772993481517e-08,
+            "gmid_1_V": 5.901686395137773e-08,
+            "intrinsic_gain": 3.3926277342999356e-09
+          }
+        },
+        {
+          "file": "verification.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.742923960712517e-07,
+          "relative_errors": {
+            "gm_S": 5.073554920631551e-08,
+            "gds_S": 1.2355686829224055e-07,
+            "id_A": 8.746530022474275e-08,
+            "gmid_1_V": 3.6729754127051706e-08,
+            "intrinsic_gain": 1.742923960712517e-07
+          }
+        }
+      ]
+    },
+    {
+      "name": "ihp-sg13g2-nmos-characterization",
+      "status": "passed",
+      "samples": 42
+    },
+    {
+      "name": "ihp-sg13g2-pmos-characterization",
+      "status": "passed",
+      "samples": 42
+    },
+    {
+      "name": "ihp-sg13g2-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "native.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.7936617802138954e-07,
+          "relative_errors": {
+            "gm_S": 5.619935938838694e-08,
+            "gds_S": 5.368524447213474e-08,
+            "id_A": 1.7936617802138954e-07,
+            "gmid_1_V": 1.231668407264408e-07,
+            "intrinsic_gain": 1.0988459797633965e-07
+          }
+        },
+        {
+          "file": "verification.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 7.56929197098799e-08,
+          "relative_errors": {
+            "gm_S": 1.9326837685795795e-08,
+            "gds_S": 5.636607758319201e-08,
+            "id_A": 2.2722211445724838e-08,
+            "gmid_1_V": 4.204905024174366e-08,
+            "intrinsic_gain": 7.56929197098799e-08
+          }
+        }
+      ]
+    },
+    {
+      "name": "ihp-sg13cmos5l-nmos-characterization",
+      "status": "passed",
+      "samples": 42
+    },
+    {
+      "name": "ihp-sg13cmos5l-pmos-characterization",
+      "status": "passed",
+      "samples": 42
+    },
+    {
+      "name": "ihp-sg13cmos5l-xschem",
+      "status": "passed",
+      "comparisons": [
+        {
+          "file": "top.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "child.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.8341378793529373e-07,
+          "relative_errors": {
+            "gm_S": 7.674638924370925e-08,
+            "gds_S": 4.898483063620063e-08,
+            "id_A": 1.0666737915165925e-07,
+            "gmid_1_V": 1.8341378793529373e-07,
+            "intrinsic_gain": 2.776155727524099e-08
+          }
+        },
+        {
+          "file": "native.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 1.7936617802138954e-07,
+          "relative_errors": {
+            "gm_S": 5.619935938838694e-08,
+            "gds_S": 5.368524447213474e-08,
+            "id_A": 1.7936617802138954e-07,
+            "gmid_1_V": 1.231668407264408e-07,
+            "intrinsic_gain": 1.0988459797633965e-07
+          }
+        },
+        {
+          "file": "verification.csv",
+          "relative_tolerance": 1e-06,
+          "max_relative_error": 7.56929197098799e-08,
+          "relative_errors": {
+            "gm_S": 1.9326837685795795e-08,
+            "gds_S": 5.636607758319201e-08,
+            "id_A": 2.2722211445724838e-08,
+            "gmid_1_V": 4.204905024174366e-08,
+            "intrinsic_gain": 7.56929197098799e-08
+          }
+        }
+      ]
+    }
+  ],
+  "direct_device_checks": [
+    {
+      "pdk": "sky130A",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 6.1962174517665645,
+        "gain": 66.10378169428854,
+        "ro": 47046.103213121925,
+        "headroom": 0.6757458521617568,
+        "ft": 7915870096.807907
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/sky130A-nmos.raw",
+      "deck_sha256": "7dd7c0a88e6ca68561526edb0b1eadbc59dc809da6d9b5c3bedf839421ac263a",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "id": 0.0002019021262689223,
+            "gm": 0.001325781384950432
+          },
+          "deck_sha256": "7bb00b8c0e236c484f98b1c7aba1b4d249c4ca985e2eb5325c903359d083c45b"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "id": 0.0004038042525378445,
+            "gm": 0.002651562769900863
+          },
+          "deck_sha256": "eacae57d9de13ed75891655f9fb60adbc113291e2909a7ec56daf73312ffbd6c"
+        }
+      ]
+    },
+    {
+      "pdk": "sky130A",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 17.31112054887043,
+        "gain": 149.45294123077076,
+        "ro": 13398803.090171648,
+        "headroom": 0.8446072665032421,
+        "ft": 100019638.81153898
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/sky130A-pmos.raw",
+      "deck_sha256": "902c5073d9277faf0f1454a2d60bb274b19c98354b04c9462207f960be66e9e5",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "id": 7.479659812973257e-07,
+            "gm": 1.292486626234145e-05
+          },
+          "deck_sha256": "c06e685a7c9c3e08d75d49bc4ee904cd5a725312384d9e235a227dba45e74c5c"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "id": 1.495931962594651e-06,
+            "gm": 2.584973252468289e-05
+          },
+          "deck_sha256": "7cd104a63d816e488ae324a4749a48d62634b0f32e15af89c9e836f99745f478"
+        }
+      ]
+    },
+    {
+      "pdk": "gf180mcuD",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 1.3654748027187265,
+        "gain": 80.81953782126658,
+        "ro": 57873.5730370592,
+        "headroom": 1.0047513986919556,
+        "ft": 12240978499.493038
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/gf180mcuD-nmos.raw",
+      "deck_sha256": "6608c366dc66d8aac5f1ed9e2e86cdf00131b47425e2cbc5fc23fb25d17344a6",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "id": 0.001020797304518857,
+            "gm": 0.001393956551522948
+          },
+          "deck_sha256": "8c29bd594a59d35ee9a464baf04bfe5b7e19d8c2ec9bd65ce2d2c374edb49152"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "id": 0.002041594609037714,
+            "gm": 0.002787913103045896
+          },
+          "deck_sha256": "ef23932af67ffbb557438a0bd7a5655bc6058a48639db81ea0ab5e66ee9489f9"
+        }
+      ]
+    },
+    {
+      "pdk": "gf180mcuD",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 1.7201003058965445,
+        "gain": 67.59874368270864,
+        "ro": 151428.428699959,
+        "headroom": 0.9847900285119873,
+        "ft": 3540108327.702302
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/gf180mcuD-pmos.raw",
+      "deck_sha256": "47d8b250fef794cc49a647e16d87e5a04abf0834c525339c3cafc0a95ac5432f",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "id": 0.0002600361570042766,
+            "gm": 0.0004472811283559489
+          },
+          "deck_sha256": "7e60694404cbaf510e2498cb49b29c1eeea0140a88b30f34c330a777a78898c2"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "id": 0.0005200723140085531,
+            "gm": 0.0008945622567118978
+          },
+          "deck_sha256": "0ca6a192a8105276fec6ce1cfe60c1c9d6163aa8681a7a42a45318243269204e"
+        }
+      ]
+    },
+    {
+      "pdk": "ihp-sg13g2",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 2.811140839776347,
+        "gain": 22.48176354367806,
+        "ro": 5947.905798885675,
+        "headroom": 0.4030032531587178,
+        "ft": 11816919046.017904
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/ihp-sg13g2-nmos.raw",
+      "deck_sha256": "191a61ac31423bba18d4aca4cfc795fd4f462e7d8de4227f0eee7c23f225c9c9",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "ids": 0.001261831813507129,
+            "gm": 0.0036520035277309
+          },
+          "deck_sha256": "d622af750563f4f3bfec898f1cb29a5f4cb70ba5a59a7f1e23132fb9cdc1e00c"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "ids": 0.002523663627014259,
+            "gm": 0.0073040070554618
+          },
+          "deck_sha256": "bca955355f1ad2f51764c76f3065447b3fc55f33adaa3dd02f742178206dc379"
+        }
+      ]
+    },
+    {
+      "pdk": "ihp-sg13g2",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 3.520385072829937,
+        "gain": 55.65345245774611,
+        "ro": 71555.05283792625,
+        "headroom": 0.47194531193539724,
+        "ft": 2548921652.587919
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/ihp-sg13g2-pmos.raw",
+      "deck_sha256": "dde9c1d480917d3073f21a3c9dd5fa9eb91c6d6745a4bad5fb439c6de4f94146",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "ids": 0.0002256701979612762,
+            "gm": 0.0007938439239309323
+          },
+          "deck_sha256": "787ea89876eec0c18275945a2bb33b5731c6bf734ce0e4797fad6103240cbfa0"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "ids": 0.0004513403959225524,
+            "gm": 0.001587687847861865
+          },
+          "deck_sha256": "56508c853047de9b3b207bfbfd9da93bc3792fc876468a23c8c266921d144b31"
+        }
+      ]
+    },
+    {
+      "pdk": "ihp-sg13cmos5l",
+      "device": "nmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 2.811140839776347,
+        "gain": 22.48176354367806,
+        "ro": 5947.905798885675,
+        "headroom": 0.4030032531587178,
+        "ft": 11816919046.017904
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/ihp-sg13cmos5l-nmos.raw",
+      "deck_sha256": "7fde81bc6db4a399453f219144afe1c0980838dec29397150c88ba4763de52a2",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "ids": 0.001261831813507129,
+            "gm": 0.0036520035277309
+          },
+          "deck_sha256": "d982781d45d185949b3959c7570ec1535b32e118103d31b9e9a704f1d72f79a6"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "ids": 0.002523663627014259,
+            "gm": 0.0073040070554618
+          },
+          "deck_sha256": "80f06100a409c54deb088bad28ed2176860d9d21fbbc196730bcef2d791e1034"
+        }
+      ]
+    },
+    {
+      "pdk": "ihp-sg13cmos5l",
+      "device": "pmos",
+      "status": "passed",
+      "metrics": {
+        "gmid": 3.520385072829937,
+        "gain": 55.65345245774611,
+        "ro": 71555.05283792625,
+        "headroom": 0.47194531193539724,
+        "ft": 2548921652.587919
+      },
+      "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/pdk/20260922-194852-591107/ihp-sg13cmos5l-pmos.raw",
+      "deck_sha256": "eb0eca39078f57077e90f57f9eb4172787f010c5936f92db509553dbc73589d6",
+      "geometry": [
+        {
+          "fingers": 2,
+          "copies": 1,
+          "measured": {
+            "ids": 0.0002256701979612762,
+            "gm": 0.0007938439239309323
+          },
+          "deck_sha256": "c72683c8f9f271e69e8bfecf1e3a8f76be6af0151718cde0438d9b565e18d55f"
+        },
+        {
+          "fingers": 2,
+          "copies": 2,
+          "measured": {
+            "ids": 0.0004513403959225524,
+            "gm": 0.001587687847861865
+          },
+          "deck_sha256": "431ecc7eb768b1fc6af26679c3b7cc9c4286a324df8573a6b5e157bc23f3c34c"
+        }
+      ]
+    }
+  ],
+  "cli_characterizations": [
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "sky130A",
+      "model": "nfet_01v8",
+      "corner": "tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/sky130/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/sky130A",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "b3f75e90d22e488d291175815fd924703f8bb16bd09d4786cf7c9ba567359cee",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 33,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/nmos-lookup-decks-6oqdafo5/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/nmos-lookup-decks-6oqdafo5/length-0.spice",
+          "deck_sha256": "9f6f6308e9d43f96f095b4ab2e74ec01f811910bfad3c4bb1306ad3a07021294"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 33,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/nmos-lookup-decks-6oqdafo5/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/nmos-lookup-decks-6oqdafo5/length-1.spice",
+          "deck_sha256": "36ab345bba67b27a6b608776eed2141d0ecb16c1a6399287b3a9235902766673"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 179,
+          "warnings": [],
+          "manifest_sha256": "ee96be6d0ea9fe23a4511a00a341c9ea2a8f13ff7f03daa35e3d64a90642e38f"
+        },
+        {
+          "files": 179,
+          "warnings": [],
+          "manifest_sha256": "e758c400f166c61eb0e58a685b9bdc8d70fca253d3b00d9a421abcbcc02d9c76"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "sky130A",
+      "model": "pfet_01v8",
+      "corner": "tt",
+      "temp_c": 27.0,
+      "vds_v": -0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/sky130/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/sky130A",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "11314f19399de68d690f078c8cb4d34a2355e39c8a6c81f91b0794401351e387",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 29,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/pmos-lookup-decks-xca3h91_/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/pmos-lookup-decks-xca3h91_/length-0.spice",
+          "deck_sha256": "f195804b97fe5402090d865634a23ca96f869539f76a260a00d1feef0d314470"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 28,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/pmos-lookup-decks-xca3h91_/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/pmos-lookup-decks-xca3h91_/length-1.spice",
+          "deck_sha256": "8f8c3dc0636caca08a0dbd1bcd9207ae70d125f767b2efd7cb566d01c0d486bc"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 179,
+          "warnings": [],
+          "manifest_sha256": "f570a1db5ecc611fe9fff9d46aed01702077a3dd3cc6f371826954029de035ec"
+        },
+        {
+          "files": 179,
+          "warnings": [],
+          "manifest_sha256": "313cb3470aeec2a7f95fd4328cbfcfc8f8bc3069fe5a6da283d021e185b59198"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "gf180mcuD",
+      "model": "nfet_03v3",
+      "corner": "typical",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/gf180mcu/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/gf180mcuD",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "6e8a23cefb6d79a72510c9a07f97aaa3262f7218c0904cc8bdd87bd3d394e02d",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 63,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/nmos-lookup-decks-afxb7ziw/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/nmos-lookup-decks-afxb7ziw/length-0.spice",
+          "deck_sha256": "cf3e376bbc7ae15e8488b132e997019ba784d4b32b8a2ef5777ef1bd5049458f"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 63,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/nmos-lookup-decks-afxb7ziw/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/nmos-lookup-decks-afxb7ziw/length-1.spice",
+          "deck_sha256": "649c5e1dc9fd71e002815dd9abd6aeb86f9f365388f00599d9becaaaacc74736"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "11d9cdd2ea7b53e96b9952f5f51c778117137c6116cc4b6cb15070b7373eb467"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "775f5268803e83ad01ea4b217aa7b9e250560a7b19cd0fd42bc04bac2c4f6b49"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "gf180mcuD",
+      "model": "pfet_03v3",
+      "corner": "typical",
+      "temp_c": 27.0,
+      "vds_v": -0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/gf180mcu/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/gf180mcuD",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "e9b82b9711cf9439a7bae3c163a844671c2f088956b925c8e6aa39bd33a2769f",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 62,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/pmos-lookup-decks-ync83wn_/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/pmos-lookup-decks-ync83wn_/length-0.spice",
+          "deck_sha256": "412d3311ccb8fc0399ea8570412ebe0cd274c8b95967a104afa0df53748fc304"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 61,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/pmos-lookup-decks-ync83wn_/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/pmos-lookup-decks-ync83wn_/length-1.spice",
+          "deck_sha256": "4e9fa9214723b6de186e9fc9a6e88b9183697ad71e25cd6f9b674768cb0ed79f"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "0d0d1b13df455c0b9fb40bb7cef11d29ac7291d68dba1a591a9985af23b5c6a2"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "b778b90e5347569cbdd24db5fe18392230af83fe8a5d4aaf7f43e1cb05c3a116"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13g2",
+      "model": "sg13_lv_nmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13g2",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "1893c9835abf16643bac68cc132f2ad910e625623ab7fd82e3230c88f04e5310",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/nmos-lookup-decks-roria8iw/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/nmos-lookup-decks-roria8iw/length-0.spice",
+          "deck_sha256": "a7e980af6a340ed3b86bc7696730f9fccc6990d69d33b73bbc41c44d0007bd6a"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/nmos-lookup-decks-roria8iw/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/nmos-lookup-decks-roria8iw/length-1.spice",
+          "deck_sha256": "f3bdc10847f54be643aa81d98fd80cfed9c665ee747f002e2b13803f0b0e1a82"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "d6303ce3f661d56d22be8ec7c384082cc7ffe089321c5f585bf9e42fc53bccab"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "7bb97dbf7441b391bc413dd7ad21e2a9ef224ee7cd58a686f9cd89e61d1242f4"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13g2",
+      "model": "sg13_lv_pmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": -0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13g2",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "a2b41e7f790b8a77dea044f6ee743a8a41bdf5df0c4ce2bba27cb36957c7ee66",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/pmos-lookup-decks-_z88wwft/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/pmos-lookup-decks-_z88wwft/length-0.spice",
+          "deck_sha256": "717d3cb14af4110aa5cc7958169de8ea13a78f443032fcabf82f31f80b87e4d3"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/pmos-lookup-decks-_z88wwft/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/pmos-lookup-decks-_z88wwft/length-1.spice",
+          "deck_sha256": "6443c2e976a2684d8dce724aef470e346d3a24c0a0b256f29ae2dbf40104f7d6"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "62fcb09a42bb40eca01c6c5299b29505ef60ef4d7e66a95c5f3436f7e96125e2"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "9dcbf46375982578f3adbb538a3af42a039dc8b2fd46862216c617b21db0534e"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13cmos5l",
+      "model": "sg13_lv_nmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13cmos5l",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "8fc33a0e72600ca8dbff0eeda27bc1351404f56dfb55a9e8126c41da5e752045",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/nmos-lookup-decks-mvorhwaf/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/nmos-lookup-decks-mvorhwaf/length-0.spice",
+          "deck_sha256": "74938fb4bc28c281cc5b8bdbac54f64184f25a0493635bc96f588ca7ac2fd515"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/nmos-lookup-decks-mvorhwaf/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/nmos-lookup-decks-mvorhwaf/length-1.spice",
+          "deck_sha256": "55faad7b9283c22475d5422d5255cb7980e01ba2786ee2f0c016ebe662ca0cb3"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "6a6219263a69b234f034d5cc7c6a69377fa0953849240f8f5bd47594f895522e"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "b31eb7071bb5a4049351100a2758bc9a1738fb380176e1fe8f43921135066e81"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13cmos5l",
+      "model": "sg13_lv_pmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": -0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13cmos5l",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "9408305e48aca97c90ec8a77536927015667a43411fa236fc6a196434646f568",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/pmos-lookup-decks-mrp4h6sh/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/pmos-lookup-decks-mrp4h6sh/length-0.spice",
+          "deck_sha256": "f30666093c7ace51e2f861a3ba9c9d81f231239507f716b05d51d0d9f03b7a93"
+        },
+        {
+          "length_um": 1.0,
+          "samples": 21,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/pmos-lookup-decks-mrp4h6sh/length-1.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/pmos-lookup-decks-mrp4h6sh/length-1.spice",
+          "deck_sha256": "940bc70e633bacf06694471677e3e0b3d96300d5bd57fdb942d85e7b909b97d2"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "4419c13bcd8b06c92f68791b2b32206485c2f4c8bba0a82f0bcd02cf06f9b1b8"
+        },
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "65b81eca991adba69a10b37617f457daa728e1377f619072bc73a7aa77e26844"
+        }
+      ]
+    }
+  ],
+  "gui_characterizations": [
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "sky130A",
+      "model": "nfet_01v8",
+      "corner": "tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/sky130/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/sky130A",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "90ba74bd43d186bc63a49920717322f5be9d44114ea547a8899f75fa8d069a98",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 7,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/lookups/nfet_01v8-1790099488563/lookup-decks-hxf44a04/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/lookups/nfet_01v8-1790099488563/lookup-decks-hxf44a04/length-0.spice",
+          "deck_sha256": "1fe82f61a01d48ecf3f3a38dedd56c152bf880208e5a1eb2e5b4728960379be1"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 173,
+          "warnings": [],
+          "manifest_sha256": "2c9d9e9cb286b30863dd0cde437f0850090a86f4db794fd3bf0f7a426ece18e9"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "gf180mcuD",
+      "model": "nfet_03v3",
+      "corner": "typical",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ciel/gf180mcu/versions/026824c7969ce6f4fc9678e6ca04b0a06a596c4b/gf180mcuD",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "2368f3bf96ff476670180ef0bdb4be236751fa993160d2d45154b73638ff81bb",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 7,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/lookups/nfet_03v3-1790099527359/lookup-decks-zfctjt51/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/lookups/nfet_03v3-1790099527359/lookup-decks-zfctjt51/length-0.spice",
+          "deck_sha256": "c4d68d7e0a12f83e968d98465d6415cbf8aeaaad9440c96190ab70ee91fcfa37"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 6,
+          "warnings": [],
+          "manifest_sha256": "03ebbcd7c62218f3c316317e4b089e91a37adb97d36d7089e1e34d789c86d7c1"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13g2",
+      "model": "sg13_lv_nmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13g2",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "ab13030f0a20e295d6993da664ba7b1adab2eee263aeb41ebcc214691604c4f6",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 7,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/lookups/sg13_lv_nmos-1790099532477/lookup-decks-72b091c6/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/lookups/sg13_lv_nmos-1790099532477/lookup-decks-72b091c6/length-0.spice",
+          "deck_sha256": "96bcd949a97bbf29348bfb0a08abc59051acd746fcff64601cf97ff473f090d9"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "69576913430366c55018af87f6d14359aa705fdc4d4341c0cecccab3331b142b"
+        }
+      ]
+    },
+    {
+      "format": "analog-lens-characterization",
+      "schema": 1,
+      "status": "completed",
+      "pdk": "ihp-sg13cmos5l",
+      "model": "sg13_lv_nmos",
+      "corner": "mos_tt",
+      "temp_c": 27.0,
+      "vds_v": 0.7,
+      "vsb_v": 0.0,
+      "total_width_um": 10.0,
+      "fingers": 1,
+      "multiplier": 1,
+      "pdk_path": "/foss/pdks/ihp-sg13cmos5l",
+      "iic_version": "2026.08",
+      "ngspice_version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Tue Aug 25 10:03:38 UTC 2026\n******",
+      "csv_sha256": "3c2a3a4e216874e9156b5e18469ec3d72ab0e3df916238ab878ebf89eb0b6189",
+      "sweeps": [
+        {
+          "length_um": 0.5,
+          "samples": 7,
+          "monotonic_gmid": true,
+          "raw": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/lookups/sg13_lv_nmos-1790099536698/lookup-decks-8n5css2_/length-0.raw",
+          "deck": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/lookups/sg13_lv_nmos-1790099536698/lookup-decks-8n5css2_/length-0.spice",
+          "deck_sha256": "00e3f40ce128e6ca03f81bddca3b46320d178adccb0883c9a6a15748a09e62b9"
+        }
+      ],
+      "dependency_coverage": [
+        {
+          "files": 12,
+          "warnings": [],
+          "manifest_sha256": "d01d2e0075a154e6767cebff258ae8ceb7efd3d5165dbe8e1afa3dca81144ff1"
+        }
+      ]
+    }
+  ],
+  "gui_batches": [
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "sky130A",
+        "model": "nfet_01v8",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/lookups/nfet_01v8-1790099499670/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "sky130A",
+            "model": "nfet_01v8",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache/d900e19c5a4e4f59afd40e4aef91471cc023e078882bea6e432eee0d1c22ebba/lookup.csv",
+          "cache_key": "d900e19c5a4e4f59afd40e4aef91471cc023e078882bea6e432eee0d1c22ebba",
+          "reused": false
+        },
+        {
+          "request": {
+            "pdk": "sky130A",
+            "model": "nfet_01v8",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache/3efc68eed8803399235545624b01351008ff1bd081d0879f6b2c613821cd7604/lookup.csv",
+          "cache_key": "3efc68eed8803399235545624b01351008ff1bd081d0879f6b2c613821cd7604",
+          "reused": false
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "054d9bd7665538fd7c4589e852024ba9535dedc12ca56e54d486044a00f925bc"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "sky130A",
+        "model": "nfet_01v8",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/lookups/nfet_01v8-1790099521863/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "sky130A",
+            "model": "nfet_01v8",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache/d900e19c5a4e4f59afd40e4aef91471cc023e078882bea6e432eee0d1c22ebba/lookup.csv",
+          "cache_key": "d900e19c5a4e4f59afd40e4aef91471cc023e078882bea6e432eee0d1c22ebba",
+          "reused": true
+        },
+        {
+          "request": {
+            "pdk": "sky130A",
+            "model": "nfet_01v8",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/sky130A/.analog-lens/cache/3efc68eed8803399235545624b01351008ff1bd081d0879f6b2c613821cd7604/lookup.csv",
+          "cache_key": "3efc68eed8803399235545624b01351008ff1bd081d0879f6b2c613821cd7604",
+          "reused": true
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "054d9bd7665538fd7c4589e852024ba9535dedc12ca56e54d486044a00f925bc"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "gf180mcuD",
+        "model": "nfet_03v3",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "typical"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/lookups/nfet_03v3-1790099527835/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "gf180mcuD",
+            "model": "nfet_03v3",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "typical",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache/2c3f516585072ac6fa9796c99f779158a64c1dec1dbefa7c228e1d11145bb5b7/lookup.csv",
+          "cache_key": "2c3f516585072ac6fa9796c99f779158a64c1dec1dbefa7c228e1d11145bb5b7",
+          "reused": false
+        },
+        {
+          "request": {
+            "pdk": "gf180mcuD",
+            "model": "nfet_03v3",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "typical",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache/2c95796855db5edc6d09272eccee8fbc92f85ddca5bfbbb9b4d4e3d05526af2b/lookup.csv",
+          "cache_key": "2c95796855db5edc6d09272eccee8fbc92f85ddca5bfbbb9b4d4e3d05526af2b",
+          "reused": false
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "7072145d17ad2af8e83e234768941361f72e6207f60b4840d2f378ec3400e97a"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "gf180mcuD",
+        "model": "nfet_03v3",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "typical"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/lookups/nfet_03v3-1790099528663/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "gf180mcuD",
+            "model": "nfet_03v3",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "typical",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache/2c3f516585072ac6fa9796c99f779158a64c1dec1dbefa7c228e1d11145bb5b7/lookup.csv",
+          "cache_key": "2c3f516585072ac6fa9796c99f779158a64c1dec1dbefa7c228e1d11145bb5b7",
+          "reused": true
+        },
+        {
+          "request": {
+            "pdk": "gf180mcuD",
+            "model": "nfet_03v3",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "typical",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/gf180mcuD/.analog-lens/cache/2c95796855db5edc6d09272eccee8fbc92f85ddca5bfbbb9b4d4e3d05526af2b/lookup.csv",
+          "cache_key": "2c95796855db5edc6d09272eccee8fbc92f85ddca5bfbbb9b4d4e3d05526af2b",
+          "reused": true
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "7072145d17ad2af8e83e234768941361f72e6207f60b4840d2f378ec3400e97a"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "ihp-sg13g2",
+        "model": "sg13_lv_nmos",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "mos_tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/lookups/sg13_lv_nmos-1790099532829/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "ihp-sg13g2",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache/e31337089ce831dea6bc79c11380bc5d7ae598fdebd2b17707a7e44561e4a468/lookup.csv",
+          "cache_key": "e31337089ce831dea6bc79c11380bc5d7ae598fdebd2b17707a7e44561e4a468",
+          "reused": false
+        },
+        {
+          "request": {
+            "pdk": "ihp-sg13g2",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache/62961ec610fa73dc37f8b79fcdc7a610dffaa1d9a33ad0497f67a1e4a9645f52/lookup.csv",
+          "cache_key": "62961ec610fa73dc37f8b79fcdc7a610dffaa1d9a33ad0497f67a1e4a9645f52",
+          "reused": false
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "41940e73f4fd68b82119749edb1a446ec63817c51cbb6a325a231ecd0ee9f4b4"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "ihp-sg13g2",
+        "model": "sg13_lv_nmos",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "mos_tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/lookups/sg13_lv_nmos-1790099533175/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "ihp-sg13g2",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache/e31337089ce831dea6bc79c11380bc5d7ae598fdebd2b17707a7e44561e4a468/lookup.csv",
+          "cache_key": "e31337089ce831dea6bc79c11380bc5d7ae598fdebd2b17707a7e44561e4a468",
+          "reused": true
+        },
+        {
+          "request": {
+            "pdk": "ihp-sg13g2",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13g2/.analog-lens/cache/62961ec610fa73dc37f8b79fcdc7a610dffaa1d9a33ad0497f67a1e4a9645f52/lookup.csv",
+          "cache_key": "62961ec610fa73dc37f8b79fcdc7a610dffaa1d9a33ad0497f67a1e4a9645f52",
+          "reused": true
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "41940e73f4fd68b82119749edb1a446ec63817c51cbb6a325a231ecd0ee9f4b4"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "ihp-sg13cmos5l",
+        "model": "sg13_lv_nmos",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "mos_tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/lookups/sg13_lv_nmos-1790099537052/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "ihp-sg13cmos5l",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache/530211ba8153800cacb5ab2d4a37a9522bb0d115b9b112778739c662677f4573/lookup.csv",
+          "cache_key": "530211ba8153800cacb5ab2d4a37a9522bb0d115b9b112778739c662677f4573",
+          "reused": false
+        },
+        {
+          "request": {
+            "pdk": "ihp-sg13cmos5l",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache/b91029ca617e5d8286e6dae103db699b29ccad7450bb57e0011b8e851f572b06/lookup.csv",
+          "cache_key": "b91029ca617e5d8286e6dae103db699b29ccad7450bb57e0011b8e851f572b06",
+          "reused": false
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "bd33b12cc2a2acd56dc94ada7f575c187129a537de01113e505cf5c6181a81ac"
+    },
+    {
+      "format": "analog-lens-batch",
+      "schema": 1,
+      "status": "completed",
+      "request": {
+        "pdk": "ihp-sg13cmos5l",
+        "model": "sg13_lv_nmos",
+        "pdk_root": "/foss/pdks",
+        "lengths": [
+          0.5
+        ],
+        "width": 10.0,
+        "corners": [
+          "mos_tt"
+        ],
+        "temps": [
+          27.0,
+          85.0
+        ],
+        "vds_values": [
+          0.7
+        ],
+        "vsb_values": [
+          0.0
+        ],
+        "vgs_start": 0.4,
+        "vgs_stop": 1.0,
+        "vgs_step": 0.1,
+        "output": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/lookups/sg13_lv_nmos-1790099537396/lookup.csv",
+        "cache": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache"
+      },
+      "jobs": [
+        {
+          "request": {
+            "pdk": "ihp-sg13cmos5l",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 27.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache/530211ba8153800cacb5ab2d4a37a9522bb0d115b9b112778739c662677f4573/lookup.csv",
+          "cache_key": "530211ba8153800cacb5ab2d4a37a9522bb0d115b9b112778739c662677f4573",
+          "reused": true
+        },
+        {
+          "request": {
+            "pdk": "ihp-sg13cmos5l",
+            "model": "sg13_lv_nmos",
+            "lengths": [
+              0.5
+            ],
+            "width": 10.0,
+            "corner": "mos_tt",
+            "temp": 85.0,
+            "vds": 0.7,
+            "vsb": 0.0,
+            "vgs_start": 0.4,
+            "vgs_stop": 1.0,
+            "vgs_step": 0.1,
+            "polarity": "n",
+            "sign": 1
+          },
+          "csv": "/foss/designs/analog-lens/build/iic/20260922-194839-248624/ihp-sg13cmos5l/.analog-lens/cache/b91029ca617e5d8286e6dae103db699b29ccad7450bb57e0011b8e851f572b06/lookup.csv",
+          "cache_key": "b91029ca617e5d8286e6dae103db699b29ccad7450bb57e0011b8e851f572b06",
+          "reused": true
+        }
+      ],
+      "samples": 14,
+      "csv_sha256": "bd33b12cc2a2acd56dc94ada7f575c187129a537de01113e505cf5c6181a81ac"
+    }
+  ],
+  "sizing_verification": [
+    {
+      "pdk": "sky130A",
+      "state": "Miss",
+      "conditions": "Verified conditions \u00b7 Deck corner and temperature; measured terminal biases.",
+      "rows": [
+        {
+          "metric": "gm",
+          "target": "0.0033216090496260477",
+          "before": "0.0013767914",
+          "measured": "0.002606018",
+          "error_percent": "-21.543506142199675",
+          "change": "0.0012292266",
+          "state": "Miss"
+        },
+        {
+          "metric": "gmid",
+          "target": "4.434420002066099",
+          "before": "6.202024833210302",
+          "measured": "6.573573966183358",
+          "error_percent": "48.239768969122856",
+          "change": "0.3715491329730556",
+          "state": "Miss"
+        }
+      ],
+      "geometry": {
+        "fingers": "2",
+        "copies": "2",
+        "finger_width": "5.0",
+        "width": "10.0",
+        "total_width": "20.0"
+      }
+    },
+    {
+      "pdk": "gf180mcuD",
+      "state": "Pass",
+      "conditions": "Verified conditions \u00b7 Deck corner and temperature; measured terminal biases.",
+      "rows": [
+        {
+          "metric": "gm",
+          "target": "0.002434891467800576",
+          "before": "0.0010574351",
+          "measured": "0.0023768442",
+          "error_percent": "-2.3839776256232743",
+          "change": "0.0013194091",
+          "state": "Pass"
+        },
+        {
+          "metric": "gmid",
+          "target": "1.2214981568246512",
+          "before": "1.1357517354465534",
+          "measured": "1.1268769277756816",
+          "error_percent": "-7.746325978496971",
+          "change": "-0.008874807670871787",
+          "state": "Pass"
+        }
+      ],
+      "geometry": {
+        "fingers": "2",
+        "copies": "2",
+        "finger_width": "5.0",
+        "width": "10.0",
+        "total_width": "20.0"
+      }
+    },
+    {
+      "pdk": "ihp-sg13g2",
+      "state": "Miss",
+      "conditions": "Verified conditions \u00b7 Deck corner and temperature; measured terminal biases.",
+      "rows": [
+        {
+          "metric": "gm",
+          "target": "0.005594386740013404",
+          "before": "0.0036472077",
+          "measured": "0.0070600812",
+          "error_percent": "26.199376769992217",
+          "change": "0.0034128735",
+          "state": "Miss"
+        },
+        {
+          "metric": "gmid",
+          "target": "4.290356015341908",
+          "before": "2.7959128948331298",
+          "measured": "2.883575546809083",
+          "error_percent": "-32.789364414102494",
+          "change": "0.08766265197595313",
+          "state": "Miss"
+        }
+      ],
+      "geometry": {
+        "fingers": "2",
+        "copies": "2",
+        "finger_width": "5.0",
+        "width": "10.0",
+        "total_width": "20.0"
+      }
+    },
+    {
+      "pdk": "ihp-sg13cmos5l",
+      "state": "Miss",
+      "conditions": "Verified conditions \u00b7 Deck corner and temperature; measured terminal biases.",
+      "rows": [
+        {
+          "metric": "gm",
+          "target": "0.005594386740013404",
+          "before": "0.0036472077",
+          "measured": "0.0070600812",
+          "error_percent": "26.199376769992217",
+          "change": "0.0034128735",
+          "state": "Miss"
+        },
+        {
+          "metric": "gmid",
+          "target": "4.290356015341908",
+          "before": "2.7959128948331298",
+          "measured": "2.883575546809083",
+          "error_percent": "-32.789364414102494",
+          "change": "0.08766265197595313",
+          "state": "Miss"
+        }
+      ],
+      "geometry": {
+        "fingers": "2",
+        "copies": "2",
+        "finger_width": "5.0",
+        "width": "10.0",
+        "total_width": "20.0"
+      }
+    }
+  ],
+  "live_workflows": [
+    "embedded sidebar",
+    "native simulation and callback",
+    "project session restoration",
+    "waveform cursor B",
+    "geometry Apply and one-step Undo",
+    "two-finger/two-copy symbol netlisting",
+    "measured sizing verification compared to new raw data",
+    "archived project runs and baselines",
+    "single characterization and automatic loading",
+    "27/85 C batch generation and full cache reuse",
+    "unified sizing workspace and inline preview",
+    "device-condition reuse with unique saved lookup",
+    "installed corner-section choices",
+    "optional project setup without simulation",
+    "unit-aware gm target normalized before apply",
+    "numeric verification table and tolerance-band charts"
+  ]
+}
