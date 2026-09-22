@@ -4,11 +4,11 @@ New in v0.5: measured sizing verification, finger/copy controls, netlist-based h
 
 A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
 
-Version **0.4.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
+Version **0.5.0** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
 This release integrates an **inspector sidebar**, normal xschem simulations, per-testbench autosave, waveform cursor B, sizing previews with Undo, and real PDK lookup generation. [Integrated workflow guide](docs/INTEGRATION.md).
 
-**Validation:** 85 tests, the native Tk smoke test, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) covers all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
+**v0.4 validation baseline:** 85 tests, the native Tk smoke test, and all four real PDK GUI workflows pass. The [passing IIC run](https://github.com/jonahsaunders/analog-lens/actions/runs/35738760853) covers all six integration paths. [VALIDATION.md](VALIDATION.md) records the exact image, models and evidence.
 
 ## Interface preview
 
@@ -131,7 +131,7 @@ Required columns:
 
 The file in `examples/lookup-template.csv` is **illustrative synthetic data**, explicitly labeled `DEMO_ONLY`. It is a format example, not a characterized PDK or a valid sizing database. Replace it with your characterization data.
 
-Enable **Sizing estimate** to reveal the sizing form. In compact windows it replaces the chart area; hide it to return to the chart. **View data** remains available. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. **Preview schematic changes…** lists proposed edits before Apply; one xschem Undo restores them. The initial geometry profile uses one finger and one parallel copy. **Characterize…** generates real lookup data from supported installed PDK models. See the [integration guide](docs/INTEGRATION.md) for compatible conditions, model coverage and the sizing workflow.
+Enable **Sizing estimate** to reveal the sizing form. In compact windows it replaces the chart area; hide it to return to the chart. **View data** remains available. Sizing interpolates current density within a selected curve, computes `Id = gm / (gm/Id)`, then estimates total width from `Id / current_density`. Extrapolation, duplicate gm/Id samples, and unordered/multiple branches are rejected. Supply each curve in monotonic sweep order. Editing an input clears the previous estimate; invalid entries explain the problem next to the form. Linear width scaling is an estimate; map the result to the PDK's width/finger/multiplier convention and resimulate. **Preview schematic changes…** lists proposed edits before Apply; one xschem Undo restores them. Finger and copy controls preserve existing counts by default, enforce supported geometry limits, and feed the measured sizing verification workflow. **Characterize…** generates real lookup data from supported installed PDK models. See the [v0.5 workflow guide](docs/INTEGRATION_V05.md) for compatible conditions, geometry, verification, project history and PVT/bias batches.
 
 ### Import existing MAT lookup data
 

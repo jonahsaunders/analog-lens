@@ -129,6 +129,7 @@ proc ::analog_lens::read_results {file type} {
         error "xschem did not load the requested $type plot. Existing results were not analyzed as new data."
     }
     set ::analog_lens::result_metadata {}
+    set ::analog_lens::verification_result {}; set ::analog_lens::verification_summary {}
     set sidecar [file rootname $file].metadata
     if {[file isfile $sidecar] && [file size $sidecar] < 1000000} {
         if {![catch {set metadata [read_text $sidecar]; validate_metadata $metadata}] &&

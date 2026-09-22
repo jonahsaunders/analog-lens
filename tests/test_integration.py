@@ -266,6 +266,9 @@ class Integration(unittest.TestCase):
         self.c('dict', 'incr', '::analog_lens::edit_revisions', self.get('project_key'))
         self.call('update_freshness')
         self.assertIn('out of date', self.get('verification_summary'))
+        other = self.directory/'other.raw'; other.write_text('other fixture result')
+        self.call('read_results', str(other), 'op')
+        self.assertEqual(int(self.c('string', 'length', self.get('verification_summary'))), 0)
 
     def test_verification_reports_miss_and_missing_without_pass(self):
         plan = self.c('dict', 'create', 'target_gm', .001, 'target_gmid', 15, 'tolerance', 5, 'before_values', '')
@@ -312,3 +315,14 @@ class Integration(unittest.TestCase):
         self.assertIn('--corners', command); self.assertIn('--cache', command)
         self.set('batch_edit(corners)', 'tt;exit')
         with self.assertRaises(tk.TclError): self.call('batch_command', str(self.directory/'out.csv'))
+
+    def test_verification_revision_is_captured_after_host_redraw_notification(self):
+        self.load_compatible()
+        self.app.tk.eval('namespace eval ::tctx {}; set ::tctx::.drw_netlist 0')
+        self.call('watch_design_edits')
+        self.app.tk.eval('proc redraw_notice {command args} {if {[lindex $command 1] eq "redraw"} {set ::tctx::.drw_netlist 1}}')
+        self.c('trace', 'add', 'execution', 'xschem', 'leave', 'redraw_notice')
+        self.set('size_plan', self.call('make_size_plan')); self.call('apply_size_plan')
+        self.c('trace', 'remove', 'execution', 'xschem', 'leave', 'redraw_notice')
+        pending = self.c('dict', 'get', self.get('pending_verifications'), self.get('project_key'))
+        self.assertEqual(self.c('dict', 'get', pending, 'applied_stamp'), self.call('design_stamp'))

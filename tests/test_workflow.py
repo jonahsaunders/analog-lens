@@ -141,13 +141,13 @@ class Workflow(unittest.TestCase):
         self.assertEqual(tuple(map(float, clipped)), (0, 5, 10, 5))
         self.assertEqual(str(self.call('clip_segment', -1, -1, -2, -2, (0, 10, 0, 10))), '')
 
-
-if __name__ == '__main__':
-    unittest.main()
-
     def test_observed_conditions_override_conflicting_declarations(self):
         meta = self.t.call('dict', 'create', 'corner', 'ss', 'temp_c', 85,
                            'observed_conditions', self.t.call('dict', 'create', 'corner', 'tt', 'temp_c', 27))
         actual = self.call('recorded_conditions', meta)
         self.assertEqual(self.t.call('dict', 'get', actual, 'corner'), 'tt')
         self.assertEqual(int(self.t.call('dict', 'get', actual, 'temp_c')), 27)
+
+
+if __name__ == '__main__':
+    unittest.main()

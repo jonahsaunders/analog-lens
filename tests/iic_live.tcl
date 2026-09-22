@@ -167,6 +167,11 @@ if {[catch {
     }
     require {[dict size $::analog_lens::verification_result] > 0} "Sizing verification missing: $::analog_lens::verification_summary"
     require {[dict get $::analog_lens::verification_result state] in {Pass Miss}} {Sizing targets were not measured.}
+    lassign [::analog_lens::native_paths] native_directory native_deck
+    set deck_text [regsub -all {\n[ \t]*\+[ \t]*} [::analog_lens::read_text $native_deck] { }]
+    set sized_instance [lindex [regexp -all -inline -line {^XM1[^\n]*} $deck_text] 0]
+    require {[regexp {(^|\s)(nf|ng)=2(\s|$)} $sized_instance]} "Finger count was not emitted by the installed symbol: $sized_instance"
+    require {[regexp {(^|\s)(m|mult)=2(\s|$)} $sized_instance]} "Copy count was not emitted by the installed symbol: $sized_instance"
     ::analog_lens::verification_dialog
     capture_live .analog_lens.verification sizing-verification.png
     ::analog_lens::results_dialog

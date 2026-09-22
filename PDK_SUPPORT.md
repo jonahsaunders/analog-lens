@@ -30,7 +30,7 @@ All eight simulator checks and four live xschem integrations passed. GUI checks 
 
 Fixture and native tests additionally cover numerical guards, adapter naming, ambiguous wrappers, CSV/LUT validation, sizing math, hierarchy recovery, installer preservation, keyboard/layout behavior, comparisons, sessions, provenance, and Linux cancellation. These checks complement the real PDK simulations.
 
-Geometry changes and characterization use the model pairs above. Sizing previews normalize to one finger and one parallel copy using each PDK's W/L and multiplicity conventions. Parameterized dimensions, arrays and other models are refused. The [integrated workflow guide](docs/INTEGRATION.md) describes voltage/corner limits and geometry handling.
+Geometry changes and characterization use the model pairs above. Sizing previews preserve literal finger/copy counts by default and accept explicit counts using each PDK's W/L and multiplicity conventions. Supported geometry guards and rounding are documented in the v0.5 guide. Parameterized dimensions, arrays and other models are refused. The [integrated workflow guide](docs/INTEGRATION_V05.md) describes voltage/corner limits and geometry handling.
 
 ## Coverage boundaries
 

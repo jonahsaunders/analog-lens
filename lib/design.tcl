@@ -146,10 +146,11 @@ proc ::analog_lens::apply_size_plan {{rerun 0}} {
     }
     # Also invalidate tests/hosts without the edit notification trace.
     set key [lindex [project_identity] 0]; if {$key ne {}} {dict incr ::analog_lens::edit_revisions $key}
-    begin_verification $size_plan $r
+    set applied_plan $size_plan
     set size_plan {}; xschem redraw
     if {[winfo exists $::analog_lens::window.sizepreview]} {destroy $::analog_lens::window.sizepreview}
     set ::analog_lens::status {Geometry applied. xschem Undo restores it; rerun to verify and compare.}
+    begin_verification $applied_plan $r
     update_freshness; project_flush
     if {$rerun == 1} {run_op} elseif {$rerun == 2} {run_testbench}
 }
