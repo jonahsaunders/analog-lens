@@ -21,6 +21,11 @@ from check_iic import PDKS, configuration, parse_ascii_op
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = 'v {xschem version=3.4.7 file_version=1.2}\nG {}\nK {}\nV {}\nS {}\nE {}\n'
+# xschem's ASCII raw reader uses float my_atof(), then raw value uses
+# dtoa() (%.8g). Ratios compound that conversion error. Allow one ppm for
+# this transport path only; check_iic.py still checks direct metrics at 1e-9.
+# Upstream: src/save.c read_raw_ascii_point(), src/editprop.c my_atof()/dtoa().
+XSCHEM_REL_TOL = 1e-6
 
 
 def tcl_literal(text):
@@ -97,10 +102,17 @@ def compare_export_to_raw(path):
     device = gm_keys[0][:-4]
     gm = raw[device+'[gm]']; gds = raw[device+'[gds]']
     current = raw[device+('[ids]' if row['family'] == 'ihp' else '[id]')]
+    errors = {}
     for column, expected in {'gm_S': gm, 'gds_S': gds, 'id_A': current,
                              'gmid_1_V': abs(gm/current), 'intrinsic_gain': gm/gds}.items():
-        if not math.isclose(float(row[column]), expected, rel_tol=1e-8, abs_tol=1e-15):
-            raise ValueError(f'{path.name} {column} disagrees with raw data')
+        actual = float(row[column])
+        if not math.isfinite(actual) or not math.isfinite(expected) or not math.isclose(
+                actual, expected, rel_tol=XSCHEM_REL_TOL, abs_tol=0):
+            raise ValueError(f'{path.name} {column}: export={actual:.16g}, raw={expected:.16g}; '
+                             f'exceeds xschem relative tolerance {XSCHEM_REL_TOL:g}')
+        errors[column] = abs(actual/expected-1) if expected else 0
+    return {'file': path.name, 'relative_tolerance': XSCHEM_REL_TOL,
+            'max_relative_error': max(errors.values()), 'relative_errors': errors}
 
 
 def run_logged(command, log, *, env=None, cwd=ROOT, timeout=240):
@@ -133,6 +145,11 @@ def main():
         record('environment', 'failed', error='Need an X11 display and IIC tools; missing: '+', '.join(missing))
         print('Report:', report_path)
         return 2
+    report['tool_versions'] = {}
+    for tool in ('xschem', 'ngspice'):
+        version = subprocess.run([tool, '--version'], stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT, text=True, timeout=15)
+        report['tool_versions'][tool] = version.stdout.strip()
     try:
         code = run_logged([sys.executable, str(ROOT/'tools/run_tests.py'), '--require-gui'], out/'tests.log')
         record('native-suite', 'passed' if code == 0 else 'failed')
@@ -161,8 +178,8 @@ def main():
                               directory/'xschem.log', env=env, cwd=directory, timeout=150)
             if code or not (directory/'passed.txt').is_file():
                 raise ValueError('Live xschem checks failed; inspect xschem.log')
-            for name in ('top.csv', 'child.csv'): compare_export_to_raw(directory/name)
-            record(pdk+'-xschem', 'passed')
+            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv')]
+            record(pdk+'-xschem', 'passed', comparisons=comparisons)
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
             record(pdk+'-xschem', 'failed', error=str(exc))
             log = directory/'xschem.log'
