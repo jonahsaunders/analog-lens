@@ -1,5 +1,8 @@
 name: IIC-OSIC-TOOLS integration
 on:
+  pull_request:
+  schedule:
+    - cron: '23 4 * * 1'
   push:
     branches: [main]
     paths:
@@ -18,7 +21,11 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate SKY130 NMOS and PMOS before merge
+        if: github.event_name == 'pull_request'
+        run: bash tools/run_iic_container.sh --pdks sky130A
       - name: Validate actual xschem and all supported PDKs
+        if: github.event_name != 'pull_request'
         run: bash tools/run_iic_container.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()

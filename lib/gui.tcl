@@ -110,6 +110,7 @@ proc ::analog_lens::show {} {
             build_$n [tab_page $window.tabs.$n]
         }
     }
+    bind $window.tabs <<NotebookTabChanged>> ::analog_lens::workflow_toolbar
     install_shortcuts
     bind $window <Configure> {::analog_lens::schedule_layout %W; ::analog_lens::tab_content_geometry %W}
     bind $root <Configure> [list ::analog_lens::schedule_layout $window]
@@ -483,9 +484,9 @@ proc ::analog_lens::build_lut {w} {
     set col 0
     foreach {name title} {length {Length (µm)} gmid {gm/Id (1/V)} gm {Target gm (µS)}} {
         label $w.size.${name}label $title
-        if {$name eq "length"} {ttk::combobox $w.size.$name -textvariable ::analog_lens::target_length -width 10 -state readonly
-        } elseif {$name eq "gmid"} {ttk::entry $w.size.$name -textvariable ::analog_lens::target_gmid -width 12
-        } else {ttk::entry $w.size.$name -textvariable ::analog_lens::target_gm_u -width 12}
+        if {$name eq "length"} {ttk::combobox $w.size.$name -textvariable ::analog_lens::target_display(target_length) -width 10 -state readonly
+        } elseif {$name eq "gmid"} {ttk::entry $w.size.$name -textvariable ::analog_lens::target_display(target_gmid) -width 12
+        } else {ttk::entry $w.size.$name -textvariable ::analog_lens::target_display(target_gm_u) -width 12}
         grid $w.size.${name}label -row 0 -column $col -sticky w -padx {0 12}
         grid $w.size.$name -row 1 -column $col -sticky ew -padx {0 12}
         grid columnconfigure $w.size $col -weight 1; incr col
@@ -538,8 +539,7 @@ proc ::analog_lens::load_lut {} {
     variable lut_rows; variable lut_slices; variable slice_labels; variable slice_label; variable lut_file; variable window
     set path [tk_getOpenFile -parent $::analog_lens::window -title {Load measured gm/Id lookup data} -filetypes {{{CSV lookup table} .csv}}]
     if {$path eq {}} {return}
-    set parsed [parse_lut [read_text $path]]
-    set lut_rows $parsed; set lut_file [file normalize $path]; set lut_slice {}; rebuild_lookup_filters
+    load_lookup_file $path
 }
 proc ::analog_lens::schedule_plot {} {
     variable plot_after

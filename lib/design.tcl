@@ -36,8 +36,7 @@ proc ::analog_lens::compatible_slices {device} {
         if {$value ne {}} {dict unset conditions $key}
     }
     set found {}
-    foreach row $lut_rows {
-        set slice [get $row slice]
+    foreach slice [dict keys [lookup_index]] {
         if {[dict exists $found $slice] || [lindex $slice 0] ne $pdk || [normalized_model [lindex $slice 1]] ne $model} {continue}
         lassign $slice lp lm corner temp vds vsb width
         if {[llength [condition_differences $conditions [dict create pdk $lp corner $corner temp_c $temp vds_v $vds vsb_v $vsb]]]} {continue}
@@ -74,6 +73,7 @@ proc ::analog_lens::size_selected {} {
 }
 proc ::analog_lens::make_size_plan {} {
     normalize_sizing_inputs
+    set trust [require_lookup_current]
     set r [current_device]; if {$r eq {}} {error {Select exactly one MOS in the schematic.}}
     supported_model $r
     if {$::analog_lens::run_channel ne {}} {error {Finish or cancel the simulation before changing geometry.}}
@@ -100,15 +100,17 @@ proc ::analog_lens::make_size_plan {} {
     set tolerance [number $::analog_lens::verification_tolerance]
     if {$tolerance eq {} || $tolerance <= 0 || $tolerance > 100} {error {Verification tolerance must be above 0 and at most 100 percent.}}
     set before [xschem getprop instance $owner]
+    set previous {}; dict for {key value} $edits {dict set previous $key [property $owner [list $key]]}
     return [dict create context [context] owner $owner model [get $r model] before $before edits $edits \
         result $result geometry $geometry tolerance $tolerance length $length lookup [raw_signature $::analog_lens::lut_file] slice $::analog_lens::lut_slice \
-        targets [sizing_targets]]
+        trust $trust previous_edits $previous targets [sizing_targets]]
 }
 proc ::analog_lens::preview_size {{inline 0}} {
     variable size_plan; variable sizing_preview_text; variable window
     set size_plan [make_size_plan]; set owner [get $size_plan owner]
     set sizing_preview_text "[get $size_plan model] · $owner\n\n"
-    dict for {key value} [get $size_plan edits] {append sizing_preview_text "$key: [property $owner [list $key]] → $value\n"}
+    append sizing_preview_text [geometry_preview $size_plan]
+    append sizing_preview_text "\n[bias_preview $size_plan [current_device]]\nLookup trust: [get [get $size_plan trust] reason]\n"
     append sizing_preview_text "\nLookup: [join [get $size_plan slice] { · }]\nGeometry: [get [get $size_plan geometry] fingers] fingers × [get [get $size_plan geometry] copies] parallel copies.\nPer-finger width: [format %.5g [get [get $size_plan geometry] finger_width]] µm. Total realized width: [format %.5g [get [get $size_plan geometry] total_width]] µm.\nVerification tolerance: ±[get $size_plan tolerance]% for gm and gm/Id.\n[condition_confidence [current_device]]\n\nParasitic formulas remain unchanged; fixed parasitic values need your review. Width scaling is an estimate. Run the circuit to verify.\n\nApply changes only the open schematic. xschem Undo restores all these properties in one step; saving remains your choice."
     if {$inline} {return $size_plan}
     set w $window.sizepreview
@@ -132,6 +134,7 @@ proc ::analog_lens::preview_size {{inline 0}} {
 proc ::analog_lens::apply_size_plan {{rerun 0}} {
     variable size_plan
     if {$size_plan eq {}} {error {Preview the geometry changes first.}}
+    require_lookup_current
     if {$::analog_lens::run_channel ne {}} {error {Wait for the current simulation.}}
     if {[context] ne [get $size_plan context]} {error {The schematic changed. Preview again.}}
     set owner [get $size_plan owner]

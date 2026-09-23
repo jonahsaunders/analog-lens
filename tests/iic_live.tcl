@@ -1,6 +1,9 @@
 # Actual xschem/PDK integration. Invoked by tools/validate_iic.py, never by mocks.
 fconfigure stdout -buffering line
 set live_stage startup
+set test_vds $::env(ANALOG_LENS_VDS)
+set test_vsb $::env(ANALOG_LENS_VSB)
+set test_temp $::env(ANALOG_LENS_TEMP)
 proc stage {name} {set ::live_stage $name; puts "LIVE STAGE: $name"}
 proc fail {message} {
     puts stderr "LIVE CHECK FAILED: $message"
@@ -106,7 +109,7 @@ if {[catch {
     require {[file tail [::analog_lens::raw rawfile]] eq "top.raw"} "Native results were not attached: $::analog_lens::native_message"
     ::analog_lens::refresh
     set native_values [dict get [lindex $::analog_lens::records 0] values]
-    require {abs([dict get $native_values terminal_vds]-0.7) < 1e-5} {Native .control alter command was not preserved.}
+    require {abs([dict get $native_values terminal_vds]-$test_vds) < 1e-5} {Native .control alter command was not preserved.}
     file copy -force [::analog_lens::raw rawfile] [file join $::env(ANALOG_LENS_OUTPUT) native-original.raw]
     ::analog_lens::export_report [file join $::env(ANALOG_LENS_OUTPUT) native.csv]
     set report [::analog_lens::read_text [file join $::env(ANALOG_LENS_OUTPUT) native.csv]]
@@ -130,9 +133,11 @@ if {[catch {
     set ::analog_lens::target_length 0.5
     set ::analog_lens::target_gmid [dict get $point gmid]
     set ::analog_lens::target_gm_u [expr {2e6*[dict get $point gm_s]}]
+    require {[::analog_lens::get [::analog_lens::lookup_status 1] state] eq "verified"} {Generated lookup did not validate.}
     set before_props [xschem getprop instance M1]
     ::analog_lens::preview_size
     capture_live .analog_lens.sizepreview sizing-preview.png
+    require {[dict get $::analog_lens::size_plan result required_vgs] ne {}} {Required Vgs estimate is missing.}
     set planned_width [dict get $::analog_lens::size_plan result width]
     require {abs($planned_width-20) < 1e-6} {Real lookup sizing did not scale width as expected.}
     ::analog_lens::apply_size_plan
@@ -159,7 +164,9 @@ if {[catch {
     xschem unselect_all; xschem select instance M1
     ::analog_lens::size_selected
     ::analog_lens::use_device_conditions
-    require {abs($::analog_lens::char_edit(vds)-0.7) < 1e-5} {Device-condition reuse did not copy terminal Vds.}
+    require {abs($::analog_lens::char_edit(vds)-$test_vds) < 1e-5} {Device-condition reuse did not copy terminal Vds.}
+    require {abs($::analog_lens::char_edit(vsb)-$test_vsb) < 1e-5} {Body bias was not reused.}
+    require {abs($::analog_lens::char_edit(temp)-$test_temp) < 1e-5} {Temperature was not reused.}
     require {$::analog_lens::char_edit(corner) in [::analog_lens::characterization_corners]} {Observed corner absent from installed choices.}
     require {[dict size $::analog_lens::workspace_choices] == 1} {Expected a unique compatible saved lookup.}
     ::analog_lens::setup_dialog
@@ -236,6 +243,9 @@ if {[catch {
     xschem unselect_all; xschem select instance M1
     ::analog_lens::characterize_dialog
     array set ::analog_lens::char_edit {lengths 0.5 width 10 temp 27 vds 0.7 vsb 0 start 0.4 stop 1.0 step 0.1}
+    set ::analog_lens::char_edit(vds) $test_vds
+    set ::analog_lens::char_edit(vsb) $test_vsb
+    set ::analog_lens::char_edit(temp) $test_temp
     ::analog_lens::start_characterization
     set deadline [expr {[clock milliseconds]+90000}]
     while {$::analog_lens::char_channel ne {}} {
@@ -250,8 +260,8 @@ if {[catch {
     ::analog_lens::batch_dialog
     set ::analog_lens::batch_edit(corners) $::analog_lens::char_edit(corner)
     set ::analog_lens::batch_edit(temps) {27 85}
-    set ::analog_lens::batch_edit(vds) 0.7
-    set ::analog_lens::batch_edit(vsb) 0
+    set ::analog_lens::batch_edit(vds) $test_vds
+    set ::analog_lens::batch_edit(vsb) $test_vsb
     foreach attempt {first reused} {
         ::analog_lens::start_characterization 1
         set deadline [expr {[clock milliseconds]+90000}]

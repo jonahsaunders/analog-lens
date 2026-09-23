@@ -59,6 +59,7 @@ def main():
     p.add_argument('--output',type=Path,default=Path('iic-checks'))
     p.add_argument('--timeout',type=int,default=90)
     p.add_argument('--require-all', action='store_true', help='Fail if any supported PDK is missing.')
+    p.add_argument('--pdks', nargs='+', choices=PDKS, default=list(PDKS))
     args=p.parse_args()
     binary=shutil.which('ngspice')
     if not binary:
@@ -67,7 +68,7 @@ def main():
     results=[]
     tcl = tkinter.Tcl()
     tcl.call('source', str(ROOT / 'analog_lens.tcl'))
-    for pdk in PDKS:
+    for pdk in args.pdks:
         base=(args.pdk_root/pdk).resolve()
         if not base.is_dir():
             results.append(dict(pdk=pdk,status='not-installed'));continue

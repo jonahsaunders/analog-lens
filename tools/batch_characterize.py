@@ -23,7 +23,10 @@ from project_data import read_graph, check_manifest
 
 def cache_key(request, dependencies, simulator):
     content = dict(request=request, files={p: s['sha256'] for p, s in dependencies['files'].items()},
-                   simulator=simulator, generator=hashlib.sha256(Path(characterize.__file__).read_bytes()).hexdigest())
+                   simulator=simulator, generator=hashlib.sha256(
+                       Path(characterize.__file__).read_bytes() +
+                       Path(__file__).with_name('check_iic.py').read_bytes() +
+                       Path(__file__).with_name('project_data.py').read_bytes()).hexdigest())
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
 
@@ -84,7 +87,7 @@ def main(argv=None):
             print(f'Condition {index+1}/{count}: {job.corner}, {job.temp:g} °C, Vds={job.vds:g}, Vsb={job.vsb:g}', flush=True)
             probe = output.parent/'dependency-probe.spice'
             probe.write_text(characterize.make_deck(job, base, job.lengths[0], 'probe.raw')[0])
-            dependencies, _ = read_graph(probe)
+            dependencies, _ = read_graph(probe, init_dir=base/'libs.tech/ngspice')
             # The disposable probe's path is not part of model/cache identity.
             dependencies['files'].pop(str(probe), None)
             request = vars(job)

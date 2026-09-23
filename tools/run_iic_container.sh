@@ -19,5 +19,5 @@ mkdir -p "$al_root/build/iic"
             source /headless/.bashrc
         fi
         cd /foss/designs/analog-lens
-        xvfb-run -a -s "-screen 0 1440x1000x24" python3 tools/validate_iic.py --require-all --output build/iic
-    '
+        xvfb-run -a -s "-screen 0 1440x1000x24" python3 tools/validate_iic.py --require-all --output build/iic "$@"
+    ' analog-lens "$@"

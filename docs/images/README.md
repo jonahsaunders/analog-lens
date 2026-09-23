@@ -93,3 +93,18 @@ committing them. These captures demonstrate widget rendering; they do not
 replace the validation described in `PDK_SUPPORT.md` and `VALIDATION.md`.
 
 The v0.4 captures include separate lookup filters, saved-baseline selection, and `environment-check.png`. The environment-check image demonstrates diagnostics in the capture environment; it is not a successful IIC validation report.
+
+## Development sizing guidance (2026-09-23)
+
+`development-sizing-workspace.png` and `development-sizing-preview.png` are
+actual Tk captures of the development branch using synthetic test fixtures.
+They demonstrate bias estimates, lookup trust, the contextual primary action,
+changed geometry and verification advice. They contain no measured PDK data.
+
+Regenerate under a 1440×1000 X11 display:
+
+```sh
+python3 tools/capture_gui_audit.py --mode normal --output-dir build/guidance-audit
+cp build/guidance-audit/design.png docs/images/development-sizing-workspace.png
+cp build/guidance-audit/sizepreview.png docs/images/development-sizing-preview.png
+```

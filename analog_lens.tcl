@@ -5,7 +5,7 @@ namespace eval ::analog_lens {
     variable version 0.6.1
     variable root [file dirname [file normalize [info script]]]
 }
-foreach module {core adapters lut xschem workflow session ui gui explorer integration provenance design verification characterize results usability} {
+foreach module {core adapters lut xschem workflow session ui gui explorer integration provenance design sizing_guidance verification characterize results usability} {
     source [file join $::analog_lens::root lib ${module}.tcl]
 }
 if {[llength [info commands xschem]]} {

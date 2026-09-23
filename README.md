@@ -1,8 +1,14 @@
 # Analog Lens for xschem
 
+**Development update:** bias-aware sizing guidance, verified lookup provenance,
+a guided next action, responsive background checks, runnable SKY130 lessons
+and real-PDK PR checks. See [the new workflow](docs/WORKFLOW_V07.md) and
+[start the measured tutorial](examples/README.md). The v0.6.1 validation
+record below is historical; the development changes require a new IIC run.
+
 New in v0.6: a unified **Size & verify** workspace, device-condition reuse, actionable recovery, optional project setup, visual verification, flexible units and installed corner choices. See the [usability guide](docs/USABILITY_V06.md).
 
-A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. PDK characterization uses a short-lived Python command and ngspice.
+A native Tcl/Tk analysis extension. It adds an **Analog Lens** menu, inspector sidebar and resizable analysis window inside xschem's process. No browser, server, account, or Python service is required. Characterization and provenance checks use short-lived Python commands; characterization also runs ngspice.
 
 Version **0.6.1** targets **IIC-OSIC-TOOLS on Linux/X11**, including its VNC desktop. The host operating system can run the IIC container; native macOS/Windows GUI support is outside this project's scope.
 
@@ -139,6 +145,7 @@ Required columns:
 | `total_width_um` | Total reference width, including parallel multiplicity |
 | `id_a`, `gm_s`, `gds_s` | Saved current and small-signal parameters in SI units |
 | `cgg_total_f` | Optional total gate capacitance in farads, including relevant overlaps |
+| `vgs_v` | Optional signed gate-to-source voltage for the required-bias estimate; generated tables use external terminal voltage |
 
 The file in `examples/lookup-template.csv` is **illustrative synthetic data**, explicitly labeled `DEMO_ONLY`. It is a format example, not a characterized PDK or a valid sizing database. Replace it with your characterization data.
 

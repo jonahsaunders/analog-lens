@@ -1,5 +1,7 @@
 # Validation record
 
+Development changes after v0.6.1 have a separate [validation status](docs/WORKFLOW_V07.md#validation-workflow): 142 local native/contract tests and the Tk smoke test pass. Expanded real-PDK integration is pending. The IIC results below apply to the recorded v0.6.1 commit.
+
 Version: 0.6.1 · Target: IIC-OSIC-TOOLS, Linux/X11 · Date: 2026-09-22
 
 ## Native verification

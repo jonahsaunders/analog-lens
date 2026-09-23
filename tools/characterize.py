@@ -120,7 +120,7 @@ def rows_from_points(points, args, length, prefix, current, psp):
             continue
         cgg = value('cgg') + (value('cgsol')+value('cgdol') if psp else 0)
         rows.append(dict(zip(FIELDS, [args.pdk, args.model, args.corner, args.temp, args.vds, args.vsb,
-                                     length, args.width, ids, gm, gds, cgg, value('vgs')])))
+                                     length, args.width, ids, gm, gds, cgg, point['v(g)']])))
     if len(rows) < 2:
         raise ValueError('Fewer than two usable samples; adjust the gate sweep or bias.')
     # Do not sort away a folded/nonmonotonic curve: sizing must not choose a branch silently.
@@ -193,7 +193,7 @@ def main(argv=None):
             text, prefix, current, psp = make_deck(args, base, length, raw.name)
             deck.write_text(text)
             from project_data import read_graph, check_manifest
-            dependency, _ = read_graph(deck)
+            dependency, _ = read_graph(deck, init_dir=base/'libs.tech/ngspice')
             code = simulate([binary, '-b', str(deck)], deck, log, env)
             if code or not raw.is_file() or re.search(r'(?im)^(fatal error|error:|doanalyses:)', log.read_text()):
                 raise ValueError(f'ngspice failed; inspect {log}')

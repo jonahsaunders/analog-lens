@@ -5,6 +5,7 @@ xvfb-run -a -s '-screen 0 1440x1000x24' python3 tools/capture_gui_audit.py \
     --output-dir build/gui-audit --mode large
 """
 import argparse
+import csv
 import os
 from pathlib import Path
 import sys
@@ -22,6 +23,8 @@ def main():
     args = parser.parse_args(); args.output_dir.mkdir(parents=True, exist_ok=True)
     host = fixture.Integration(); host.setUp(); c = host.c
     try:
+        # Availability fixture only; captures never invoke a simulator.
+        c('set','auto_execs(ngspice)',(sys.executable,))
         c('tk','scaling',1.3333333)
         if args.mode == 'dark':
             host.app.tk.eval('''ttk::style theme create AuditDark -parent clam -settings {
@@ -38,13 +41,25 @@ def main():
             c('font','configure',font,'-size',14 if args.mode == 'large' else 10)
         host.call('close_window');host.call('show')
         c('after','cancel',host.get('timer'));host.set('timer','')
-        host.load_compatible();host.current_metadata()
+        path=host.load_compatible()
+        with path.open() as stream: rows=list(csv.DictReader(stream))
+        for index,row in enumerate(rows): row['vgs_v']=str(.55+.05*(index%3))
+        with path.open('w',newline='') as stream:
+            writer=csv.DictWriter(stream,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+        host.set('lut_rows',host.call('parse_lut',path.read_text()))
+        c('dict','set','::mock::vectors','@m.xm1.m0[gm]',.001)
+        c('dict','set','::mock::vectors','v(@m.xm1.m0[vgs])',.9)
+        host.call('refresh')
+        host.current_metadata()
         host.call('keep_baseline');host.call('size_selected');host.call('use_device_conditions')
         host.call('workspace_preview');host.call('refresh_workspace')
         host.set('summary','DEMO ONLY · Synthetic GUI fixture')
         host.set('run_log','DEMO ONLY · No PDK simulation was run.\n'+ '\n'.join('Synthetic progress line '+str(i) for i in range(40)))
-        plan=c('dict','create','target_gm',.001,'target_gmid',15,'tolerance',10,'before_values','gm .0007 gmid 12')
-        host.set('verification_result',host.call('evaluate_targets',plan,'gm .0012 gmid 15'))
+        plan=c('dict','merge',host.get('size_plan'),c('dict','create','target_gm',float(host.get('target_gm_u'))*1e-6,'target_gmid',host.get('target_gmid'),'tolerance',10,'before_values','gm .0007 gmid 12'))
+        values='gm .001 gmid 20 terminal_vgs .9 terminal_vds .9 terminal_vbs 0'
+        result=host.call('evaluate_targets',plan,values)
+        result=c('dict','replace',result,'advice',host.call('sizing_diagnosis',plan,values,'Miss'))
+        host.set('verification_result',result)
         host.set('verification_summary','DEMO ONLY · Target miss');host.call('update_verification_text');host.call('refresh_workspace')
         main_size='900x640' if args.mode == 'large' else '1380x940'
         c('wm','geometry','.analog_lens',main_size+'+0+0')
