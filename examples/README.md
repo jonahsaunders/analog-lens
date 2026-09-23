@@ -26,8 +26,9 @@ more than 10%. It preserves decks, raw files and logs for diagnosis.
 2. Load `lookup.csv`. Its trust status should become **Verified**. Select
    **Use this device's conditions** to check the matching condition slice.
 3. Enter L = 0.5 µm and the `gm_uS` and `gmid` values printed by the generator
-   or recorded in `targets.json`. Those targets come from twice the measured
-   current and gm of a 10 µm reference device near Vgs = 0.7 V.
+   or recorded in `targets.json`. Those targets are measured directly at the
+   final 20 µm width near Vgs = 0.7 V. This avoids assuming that doubling width
+   exactly doubles gm and current; model width effects can be appreciable.
 4. Choose **Preview sizing changes**. Expect total width near 20 µm and an
    estimated required Vgs near 0.7 V. The preview explains the bias difference.
    Minor upward width rounding is shown separately.
@@ -56,8 +57,8 @@ CSV leaves the bias estimate unavailable rather than inventing a voltage.
 Open `mirror.sch` and run the testbench. M1 is diode-connected and fed by the
 reference current; M2 shares its gate and has twice the width. Inspect both
 devices and keep a baseline. M2's current should be approximately twice the
-reference current. The ratio need not be exactly two: drain voltages and
-finite output resistance differ.
+reference current. The ratio need not be exactly two: drain voltages, width
+effects and finite output resistance differ.
 
 Change the `vout` source to inspect headroom and current-ratio changes, then
 compare against the baseline. Resize M2 while keeping M1 fixed and observe

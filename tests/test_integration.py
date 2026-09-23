@@ -436,6 +436,10 @@ class Integration(unittest.TestCase):
         deck = self.directory/'run.spice'; deck.write_text('title\n.include model.lib\n')
         metadata = self.call('dependency_snapshot', str(deck))
         self.set('result_metadata', self.c('dict', 'merge', self.get('result_metadata'), metadata))
+        expected = self.call('dependency_status', 1)
+        # IIC's startup files can contain unresolved simulator variables.
+        # The async result must preserve the same coverage as a full check.
+        self.assertIn(self.c('dict', 'get', expected, 'state'), ('current', 'partial'))
         self.set('dependency_cache', '')
         self.call('dependency_status')
         first = self.get('dependency_cache')
@@ -447,7 +451,9 @@ class Integration(unittest.TestCase):
         while self.c('dict', 'exists', self.get('dependency_cache'), 'pending') and time.monotonic()<end:
             self.app.update(); time.sleep(.01)
         result = self.c('dict', 'get', self.get('dependency_cache'), 'result')
-        self.assertEqual(self.c('dict', 'get', result, 'state'), 'current')
+        self.assertFalse(self.c('dict', 'exists', self.get('dependency_cache'), 'pending'))
+        for key in ('state', 'changed', 'warnings'):
+            self.assertEqual(self.c('dict', 'get', result, key), self.c('dict', 'get', expected, key))
 
     def test_workspace_skips_render_when_inputs_have_not_changed(self):
         self.load_compatible(); self.current_metadata(); self.call('refresh_workspace'); self.call('refresh_workspace')

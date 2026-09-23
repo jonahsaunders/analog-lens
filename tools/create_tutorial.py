@@ -44,15 +44,17 @@ def create(output, pdk_root):
     output.mkdir(parents=True)
     lookup = output/'lookup.csv'
     result = characterize.main(['--pdk','sky130A','--model','nfet_01v8','--pdk-root',str(pdk_root),
-                                '--lengths','.5','--width','10','--vds','.9','--vsb','0',
+                                '--lengths','.5','--width','20','--vds','.9','--vsb','0',
                                 '--vgs-start','.4','--vgs-stop','1.2','--vgs-step','.01','--output',str(lookup)])
     if result:
         raise ValueError('Characterization failed. Inspect the preserved logs and use a new output directory to retry.')
     with lookup.open() as stream:
         rows = list(csv.DictReader(stream))
     point = min(rows, key=lambda row: abs(float(row['vgs_v'])-.7))
-    target_gm = 2*float(point['gm_s']); target_gmid = abs(float(point['gm_s'])/float(point['id_a']))
-    required_vgs = float(point['vgs_v']); target_id = 2*abs(float(point['id_a']))
+    # Characterize the final geometry directly: doubling width is only an
+    # estimate and SKY130's width-dependent effects can exceed the tolerance.
+    target_gm = float(point['gm_s']); target_gmid = abs(float(point['gm_s'])/float(point['id_a']))
+    required_vgs = float(point['vgs_v']); target_id = abs(float(point['id_a']))
     includes, instance, prefix, current, _, _, _ = configuration('sky130A', base, 'n')
     nets = dict(d='d',g='g',s='0',b='0')
     common = includes+'\n.temp 27\nvd d 0 .9\n'
@@ -79,13 +81,13 @@ def create(output, pdk_root):
         gmid = gm/ids
         measurements[label] = dict(gm_s=gm,gmid=gmid,id_a=ids,vgs_v=vgs,
                                    gm_error_percent=100*(gm/target_gm-1),gmid_error_percent=100*(gmid/target_gmid-1))
-    final = measurements['bias_adjusted']
-    if max(abs(final[k]) for k in ('gm_error_percent','gmid_error_percent')) > 10:
-        raise ValueError('Adjusted lesson did not meet the 10% device targets; inspect the retained measurements.')
     targets = dict(length_um=.5, gm_uS=target_gm*1e6, gmid=target_gmid, estimated_vgs_v=required_vgs,
                    estimated_id_a=target_id, total_width_um=20,tolerance_percent=10,measurements=measurements)
     (output/'targets.json').write_text(json.dumps(targets,indent=2)+'\n')
     print(json.dumps(targets,indent=2))
+    final = measurements['bias_adjusted']
+    if max(abs(final[k]) for k in ('gm_error_percent','gmid_error_percent')) > 10:
+        raise ValueError('Adjusted lesson did not meet the 10% device targets; inspect targets.json and the retained simulations.')
     print(f'Open: cd {output}\nxschem sizing.sch\nFollow {ROOT / "examples/README.md"}')
     return targets
 
