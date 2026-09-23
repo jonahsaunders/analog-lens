@@ -403,6 +403,10 @@ class Integration(unittest.TestCase):
         with self.assertRaisesRegex(tk.TclError, 'changed since loading'):
             self.call('apply_size_plan')
         self.assertEqual(self.c('set', '::hostfixture::props'), before)
+        path.unlink()
+        with self.assertRaisesRegex(tk.TclError, 'lookup file is missing'):
+            self.call('apply_size_plan')
+        self.assertEqual(self.c('set', '::hostfixture::props'), before)
 
     def test_outdated_generated_lookup_blocks_preview_and_is_not_auto_selected(self):
         import json

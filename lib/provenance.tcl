@@ -36,7 +36,8 @@ proc ::analog_lens::lookup_checked {path token result} {
 }
 proc ::analog_lens::lookup_status {{force 0} {path {}}} {
     if {$path eq {}} {set path $::analog_lens::lut_file}
-    if {$path eq {} || ![file isfile $path]} {return [dict create state unverified reason {No lookup file is available.}]}
+    if {$path eq {}} {return [dict create state unverified reason {No lookup file is available.}]}
+    if {![file isfile $path]} {return [dict create state outdated reason {The loaded lookup file is missing.}]}
     set path [file normalize $path]
     set cached [get $::analog_lens::lookup_trust_cache $path]
     if {!$force && ([get $cached pending 0] || [clock milliseconds]-[get $cached time 0] < 2000)} {return [get $cached result]}
