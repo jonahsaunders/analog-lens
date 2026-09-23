@@ -8,6 +8,7 @@ namespace eval ::analog_lens {
     variable native_stack {}; variable native_jobs {}; variable native_pending {}; variable native_message {}
     variable netlist_states {}
     variable sidebar {}; variable sidebar_title {Select a transistor}; variable sidebar_metrics {}
+    variable freshness_state unverified; variable native_result_state idle
     variable freshness {Results not verified against this schematic}; variable cursor_message {}; variable cursor_key {}
     variable sidebar_open 0; variable sidebar_owner {}; variable integration_watch {}
 }
@@ -51,7 +52,7 @@ proc ::analog_lens::project_sync {} {
     project_flush
     if {$project_defaults eq {}} {set project_defaults [session_data]}
     set project_key $key; set project_directory $directory
-    set ::analog_lens::verification_result {}; set ::analog_lens::verification_summary {}; set ::analog_lens::dependency_cache {}
+    set ::analog_lens::verification_result {}; set ::analog_lens::verification_summary {}; set ::analog_lens::verification_advice {}; set ::analog_lens::dependency_cache {}; set ::analog_lens::native_result_state idle
     set records {}; set result_metadata {}; set ::analog_lens::active_context {}; set ::analog_lens::watch_key {}
     set data $project_defaults; set path {}
     if {$key ne {}} {
@@ -100,18 +101,20 @@ proc ::analog_lens::watch_design_edits {} {
 proc ::analog_lens::update_freshness {} {
     set saved [get $::analog_lens::result_metadata design_stamp]
     if {$saved eq {}} {
+        set ::analog_lens::freshness_state unverified
         set ::analog_lens::freshness {Source state unverified · Run the testbench to verify.}
     } elseif {$saved ne [design_stamp]} {
+        set ::analog_lens::freshness_state stale
         set ::analog_lens::freshness {Out of date · Schematic changed; rerun before relying on these values.}
-    } else {set ::analog_lens::freshness {Current · Results match the recorded schematic state.}}
+    } else {set ::analog_lens::freshness_state current; set ::analog_lens::freshness {Current · Results match the recorded schematic state.}}
     set deps [dependency_status]
     switch -- [get $deps state] {
-        changed {set ::analog_lens::freshness {Out of date · A schematic, symbol or model dependency changed.}}
+        changed {set ::analog_lens::freshness_state stale; set ::analog_lens::freshness {Out of date · A schematic, symbol or model dependency changed.}}
         partial {append ::analog_lens::freshness { · Some dependencies unresolved.}}
         unverified {append ::analog_lens::freshness { · Dependencies unverified.}}
     }
     set ::analog_lens::conditions_confidence [condition_confidence [current_device]]
-    if {$::analog_lens::verification_result ne {} && [get $::analog_lens::verification_result current] && [string match {Out of date*} $::analog_lens::freshness]} {
+    if {$::analog_lens::verification_result ne {} && [get $::analog_lens::verification_result current] && $::analog_lens::freshness_state eq "stale"} {
         dict set ::analog_lens::verification_result current 0
         set ::analog_lens::verification_summary {Previous sizing verdict is out of date · Rerun the updated circuit.}
         update_verification_text
@@ -198,9 +201,9 @@ proc ::analog_lens::native_enter {command operation} {
                 before $before before_stamps $before_stamps preferred $configured default [file rootname $deck].raw \
                 analysis [get $::analog_lens::integration_options result_analysis] \
                 metadata [recorded_conditions [dict merge [capture_metadata] $dependencies [dict create design_stamp $stamp input_deck [file_signature $deck] source native-simulation]]]]
-            set ::analog_lens::native_message {xschem simulation running… Results will be checked when it finishes.}
+            set ::analog_lens::native_result_state running; set ::analog_lens::native_message {xschem simulation running… Results will be checked when it finishes.}
         }
-    } why]} {set ::analog_lens::native_message "Automatic results unavailable: $why"; set job {}}
+    } why]} {set ::analog_lens::native_result_state attachment_failed; set ::analog_lens::native_message "Automatic results unavailable: $why"; set job {}}
     lappend ::analog_lens::native_stack $job
 }
 proc ::analog_lens::native_leave {command code result operation} {
@@ -216,7 +219,7 @@ proc ::analog_lens::native_finished {id args} {
     if {![dict exists $::analog_lens::native_jobs $id]} {return}
     set job [dict get $::analog_lens::native_jobs $id]; dict unset ::analog_lens::native_jobs $id
     if {![info exists ::execute(exitcode,$id)] || $::execute(exitcode,$id) != 0} {
-        set ::analog_lens::native_message {xschem simulation did not complete successfully; previous results retained.}; verification_failed failed; return
+        set ::analog_lens::native_result_state failed; set ::analog_lens::native_message {xschem simulation did not complete successfully; previous results retained.}; verification_failed failed; return
     }
     if {[catch {
         set candidates [glob -nocomplain -directory [dict get $job directory] *.raw]
@@ -235,9 +238,9 @@ proc ::analog_lens::native_finished {id args} {
         if {[llength $changed] != 1} {error {No unique new raw file. Set Result file in Project settings; ensure the testbench writes it.}}
         dict set job raw [lindex $changed 0]
         dict set ::analog_lens::native_pending [dict get $job project] $job
-        set ::analog_lens::native_message {Run complete · Return to its top-level testbench to attach results.}
+        set ::analog_lens::native_result_state pending; set ::analog_lens::native_message {Run complete · Return to its top-level testbench to attach results.}
         after idle ::analog_lens::attach_native_result
-    } why]} {set ::analog_lens::native_message "Results not attached: $why"}
+    } why]} {set ::analog_lens::native_result_state attachment_failed; set ::analog_lens::native_message "Results not attached: $why"}
 }
 proc ::analog_lens::attach_native_result {} {
     set key [lindex [project_identity] 0]
@@ -256,8 +259,8 @@ proc ::analog_lens::attach_native_result {} {
         refresh
         catch {atomic_write [file rootname $path].metadata $metadata}
         finish_result_run
-        set ::analog_lens::native_message "Loaded [file tail $path] · $type"
-    } on error {why options} {set ::analog_lens::native_message "Could not attach results: $why"} finally {incr ::analog_lens::integration_internal -1}
+        set ::analog_lens::native_result_state loaded; set ::analog_lens::native_message "Loaded [file tail $path] · $type"
+    } on error {why options} {set ::analog_lens::native_result_state attachment_failed; set ::analog_lens::native_message "Could not attach results: $why"} finally {incr ::analog_lens::integration_internal -1}
 }
 proc ::analog_lens::raw_plot_type {path} {
     set f [open $path rb]

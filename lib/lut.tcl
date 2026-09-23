@@ -7,6 +7,31 @@ namespace eval ::analog_lens {
     variable target_gm_u 1000
     variable target_length {}
     variable lut_note {Load measured lookup data to explore sizing.}
+    variable lut_generation 0; variable lut_index {}; variable lut_index_generation -1
+}
+proc ::analog_lens::lookup_changed {args} {
+    incr ::analog_lens::lut_generation
+    set ::analog_lens::lookup_match_key {}
+}
+trace add variable ::analog_lens::lut_rows write ::analog_lens::lookup_changed
+proc ::analog_lens::lookup_index {} {
+    if {$::analog_lens::lut_index_generation != $::analog_lens::lut_generation} {
+        set index {}
+        foreach row $::analog_lens::lut_rows {dict lappend index [get $row slice] [get $row length_um]}
+        dict for {slice lengths} $index {dict set index $slice [lsort -real -unique $lengths]}
+        set ::analog_lens::lut_index $index
+        set ::analog_lens::lut_index_generation $::analog_lens::lut_generation
+    }
+    return $::analog_lens::lut_index
+}
+proc ::analog_lens::load_lookup_file {path} {
+    if {[file size $path] > 50000000} {error {Lookup exceeds 50 MB. Select a smaller condition set.}}
+    set parsed [parse_lut [read_text $path]]
+    set ::analog_lens::lut_file [file normalize $path]
+    set ::analog_lens::lut_rows $parsed
+    set ::analog_lens::lut_slice {}
+    set ::analog_lens::lookup_trust [lookup_status 1]
+    rebuild_lookup_filters
 }
 proc ::analog_lens::parse_lut {text} {
     set csv [csv_parse $text]
@@ -97,5 +122,6 @@ proc ::analog_lens::sizing {rows slice length gmid gm_u} {
     set density [interpolate_curve [dict get $curves $length] $gmid density]
     if {$density eq {} || $density <= 0} {error "Current density is unavailable."}
     set id [expr {$gm_u*1e-6/$gmid}]
-    return [dict create id $id width [expr {$id/$density}] density $density]
+    set vgs [interpolate_curve [dict get $curves $length] $gmid vgs_v]
+    return [dict create id $id width [expr {$id/$density}] density $density required_vgs $vgs]
 }

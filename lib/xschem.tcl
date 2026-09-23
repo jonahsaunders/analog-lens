@@ -67,7 +67,7 @@ proc ::analog_lens::terminal_bias {device} {
     # Compare characterized bias only with measured schematic terminal voltages.
     if {[get $device type] ni {nmos pmos} || [get $device name] ne [get $device owner]} {return {}}
     set volts {}
-    foreach pin {d s b} {
+    foreach pin {d g s b} {
         set node {}
         foreach spelling [list $pin [string toupper $pin]] {
             if {![catch {xschem instance_net [get $device owner] $spelling} candidate] && $candidate ne {}} {set node $candidate; break}
@@ -84,7 +84,7 @@ proc ::analog_lens::terminal_bias {device} {
     }
     set bias {}
     if {[dict exists $volts s]} {
-        foreach pin {d b} metric {terminal_vds terminal_vbs} {
+        foreach pin {d g b} metric {terminal_vds terminal_vgs terminal_vbs} {
             if {[dict exists $volts $pin]} {dict set bias $metric [expr {[dict get $volts $pin]-[dict get $volts s]}]}
         }
     }

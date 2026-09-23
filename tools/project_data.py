@@ -85,7 +85,7 @@ def resolve_path(name, directory):
     return Path(os.path.abspath(path))
 
 
-def read_graph(deck, with_init=True):
+def read_graph(deck, with_init=True, init_dir=None):
     files, visited, warnings, lines = {}, set(), [], []
 
     def record(path):
@@ -156,8 +156,9 @@ def read_graph(deck, with_init=True):
     visit(Path(os.path.abspath(deck)))
     if with_init:
         roots = [deck.parent, Path.home()]
-        if os.environ.get('SPICE_USERINIT_DIR'):
-            roots.append(Path(os.environ['SPICE_USERINIT_DIR']))
+        init_dir = init_dir or os.environ.get('SPICE_USERINIT_DIR')
+        if init_dir:
+            roots.append(Path(init_dir))
         for directory in dict.fromkeys(roots):
             for name in ('.spiceinit', 'spinit'):
                 path = directory/name

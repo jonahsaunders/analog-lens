@@ -1,12 +1,13 @@
 # Guided, optional workflows. Reuse the same guarded sizing and run operations.
 namespace eval ::analog_lens {
     variable workspace_message {}; variable workspace_device {}; variable workspace_metrics {}
+    variable workspace_bias {}
     variable workspace_conditions {Use this device's conditions to copy known values. Unknown fields stay blank.}
     variable workspace_lookup {}; variable workspace_choices {}; variable workspace_choice {}
     variable workspace_advanced 0; variable workspace_details 0; variable workspace_key {}
     variable field_help {Enter a target, preview the changes, then apply and run to measure the result.}
     variable setup_report {}; variable setup_detail {}; variable setup_rows {}; variable setup_result {}; variable setup_analysis auto
-    variable corner_note {}; variable workspace_render_key {}
+    variable corner_note {}; variable workspace_render_key {}; variable workspace_view_key {}
 }
 proc ::analog_lens::quantity {value kind} {
     set value [string trim [string map {µ u μ u − -} $value]]
@@ -115,10 +116,15 @@ proc ::analog_lens::workspace_advanced {} {
     if {$::analog_lens::workspace_advanced} {grid $w.advanced -row 4 -column 0 -columnspan 2 -sticky ew -pady 8} else {grid remove $w.advanced}
 }
 proc ::analog_lens::build_design {w} {
+    set ::analog_lens::workspace_view_key {}
     ttk::label $w.title -textvariable ::analog_lens::workspace_device -style AL.Heading.TLabel
     pack $w.title -fill x; wrapping $w.title
     ttk::label $w.metrics -textvariable ::analog_lens::workspace_metrics -wraplength 800
     pack $w.metrics -fill x -pady {4 8}; wrapping $w.metrics
+    ttk::label $w.bias -textvariable ::analog_lens::workspace_bias -wraplength 800
+    pack $w.bias -fill x -pady {0 6}; wrapping $w.bias
+    ttk::button $w.next -text {Select a transistor} -style AL.Primary.TButton
+    pack $w.next -anchor w -pady {0 8}
     ttk::frame $w.recovery; pack $w.recovery -fill x
     ttk::label $w.recovery.reason -wraplength 700 -style AL.Muted.TLabel
     pack $w.recovery.reason -fill x; wrapping $w.recovery.reason
@@ -154,7 +160,7 @@ proc ::analog_lens::build_design {w} {
         target_gm_u {Target gm (µS)} {Bare values mean µS. Examples: 800, 800 µS, 0.8 mS.}
     } {
         ttk::label $b.inputs.l$key -text $title; grid $b.inputs.l$key -row $row -column 0 -sticky w -padx {0 12} -pady 5
-        if {$key eq "target_length"} {ttk::combobox $b.inputs.$key -textvariable ::analog_lens::$key -width 16} else {ttk::entry $b.inputs.$key -textvariable ::analog_lens::$key -width 16}
+        if {$key eq "target_length"} {ttk::combobox $b.inputs.$key -textvariable ::analog_lens::target_display($key) -width 16} else {ttk::entry $b.inputs.$key -textvariable ::analog_lens::target_display($key) -width 16}
         grid $b.inputs.$key -row $row -column 1 -sticky ew -pady 5
         hint $b.inputs.$key $help
         bind $b.inputs.$key <Return> {::analog_lens::workspace_action ::analog_lens::workspace_preview; break}
@@ -188,6 +194,8 @@ proc ::analog_lens::build_design {w} {
     $b.inputs.preview configure -yscrollcommand [list $b.inputs.previewscroll set]
     grid $b.inputs.preview -row 7 -column 0 -columnspan 2 -sticky ew -pady {8 0}
     grid $b.inputs.previewscroll -row 7 -column 2 -sticky ns -pady {8 0}
+    ttk::checkbutton $b.inputs.allprops -text {Show unchanged properties} -variable ::analog_lens::preview_all -command ::analog_lens::toggle_preview_details
+    grid $b.inputs.allprops -row 8 -column 0 -columnspan 2 -sticky w
     ttk::labelframe $b.verify -text {3  Measured verification} -padding 10
     grid $b.verify -row 1 -column 1 -sticky new
     build_verification_view $b.verify
@@ -198,7 +206,7 @@ proc ::analog_lens::build_design {w} {
     bind $::analog_lens::window <Button-4> {+::analog_lens::workspace_wheel %W -3}
     bind $::analog_lens::window <Button-5> {+::analog_lens::workspace_wheel %W 3}
     bind $::analog_lens::window <MouseWheel> {+::analog_lens::workspace_wheel %W [expr {-%D/120}]}
-    $b.inputs.actions.apply configure -style AL.Primary.TButton
+    $b.inputs.actions.apply configure -style AL.TButton
     refresh_workspace
 }
 proc ::analog_lens::workspace_wheel {widget delta} {
@@ -229,13 +237,13 @@ proc ::analog_lens::workflow_issues {} {
     }
     if {[auto_execok ngspice] eq {} || ![info exists ::netlist_dir] || ![file isdirectory $::netlist_dir]} {
         lappend issues [list {The simulator or output directory needs setup.} {Set up project} ::analog_lens::setup_dialog]
-    } elseif {![dict size $::analog_lens::result_metadata] || ![string match {Current*} $::analog_lens::freshness]} {
+    } elseif {![dict size $::analog_lens::result_metadata] || $::analog_lens::freshness_state ne "current"} {
         if {[xschem get currsch] == 0} {lappend issues [list {Run this testbench to obtain current device measurements.} {Rerun testbench} ::analog_lens::run_testbench]}
     }
     if {$r ne {} && ![catch {supported_model $r}] && ![llength [compatible_slices $r]]} {
         lappend issues [list {No compatible curve is loaded for the selected device.} {Generate lookup} ::analog_lens::characterize_dialog]
     }
-    if {[string match {*raw file*} $::analog_lens::native_message] || [string match {*attach*} $::analog_lens::native_message]} {
+    if {$::analog_lens::native_result_state eq "attachment_failed"} {
         lappend issues [list $::analog_lens::native_message {Choose result file} ::analog_lens::setup_dialog]
     }
     return $issues
@@ -249,6 +257,17 @@ proc ::analog_lens::refresh_workspace {} {
     set w $::analog_lens::window.tabs.design
     if {![llength [info commands winfo]] || ![winfo exists $w]} {return}
     set r [current_device]
+    set trust [lookup_status]
+    set viewkey [list [context] $r $::analog_lens::result_metadata $::analog_lens::lut_generation $::analog_lens::lut_slice $::analog_lens::lut_file $trust \
+        [sizing_targets] $::analog_lens::size_plan $::analog_lens::sizing_preview_text $::analog_lens::verification_result $::analog_lens::verification_summary \
+        $::analog_lens::workspace_details $::analog_lens::run_log $::analog_lens::run_channel $::analog_lens::native_jobs \
+        $::analog_lens::freshness_state $::analog_lens::native_result_state $::analog_lens::native_message $::analog_lens::declared \
+        $::analog_lens::workspace_choices $::analog_lens::workspace_conditions $::analog_lens::workspace_message]
+    if {$viewkey eq $::analog_lens::workspace_view_key} {return}
+    set ::analog_lens::workspace_view_key $viewkey
+    set next [workflow_next $r $trust]
+    $w.next configure -text [get $next label] -command [list ::analog_lens::workspace_action [get $next command]]
+    set_enabled $w.next [get $next enabled 1]
     set key [list [context] [get $r owner] [get $r model]]
     if {$key ne $::analog_lens::workspace_key} {
         set ::analog_lens::workspace_key $key
@@ -275,7 +294,7 @@ proc ::analog_lens::refresh_workspace {} {
     }
     $w.recovery.reason configure -text [join $descriptions \n]
     set b $w.body.canvas.content
-    set lengths {}; foreach row $::analog_lens::lut_rows {if {[get $row slice] eq $::analog_lens::lut_slice} {lappend lengths [get $row length_um]}}
+    set lengths [get [lookup_index] $::analog_lens::lut_slice]
     $b.inputs.target_length configure -values [lsort -real -unique $lengths]
     $b.conditions.choice configure -values [dict keys $::analog_lens::workspace_choices]
     if {[dict size $::analog_lens::workspace_choices] > 1} {
@@ -283,8 +302,14 @@ proc ::analog_lens::refresh_workspace {} {
         pack $b.conditions.choice -before $b.conditions.lookup -fill x
     } else {pack forget $b.conditions.choicelabel $b.conditions.choice}
     set ::analog_lens::workspace_lookup [expr {$::analog_lens::lut_file eq {} ? "No lookup loaded." : "Loaded: [file tail $::analog_lens::lut_file] · [join $::analog_lens::lut_slice { · }]"}]
+    append ::analog_lens::workspace_lookup " · [get $trust reason]"
     set plan $::analog_lens::size_plan
-    set ready [expr {$plan ne {} && [get $plan context] eq [context] && [get $plan targets] eq [sizing_targets]}]
+    set ready [expr {$plan ne {} && [get $plan context] eq [context] && [get $plan targets] eq [sizing_targets] && [get $trust state] ne "outdated"}]
+    set ::analog_lens::workspace_bias {}
+    if {$ready} {
+        set estimate [get $plan result]
+        set ::analog_lens::workspace_bias "Preview estimate: required Vgs [eng [get $estimate required_vgs] V] · loaded Vgs [eng [measured_vgs $v] V] · |Id| [eng [get $estimate id] A] · total width [format %.4g [get [get $plan geometry] total_width]] µm"
+    }
     set idle [expr {$::analog_lens::run_channel eq {} && ![dict size $::analog_lens::native_jobs]}]
     set_enabled $b.inputs.actions.only [expr {$ready && $idle}]
     set_enabled $b.inputs.actions.apply [expr {$ready && $idle && [xschem get currsch] == 0}]
@@ -352,6 +377,7 @@ proc ::analog_lens::find_saved_lookups {device conditions} {
     if {$::analog_lens::lut_file ne {} && [file isfile $::analog_lens::lut_file]} {lappend paths $::analog_lens::lut_file}
     foreach path [lsort -unique $paths] {
         if {[file size $path] > 50000000 || [catch {parse_lut [read_text $path]} rows]} {continue}
+        if {[get [lookup_status 1 $path] state] eq "outdated"} {continue}
         set slices {}; foreach row $rows {dict set slices [get $row slice] 1}
         foreach slice [dict keys $slices] {
             lassign $slice pdk model corner temp vds vsb width
@@ -371,8 +397,8 @@ proc ::analog_lens::choose_workspace_lookup {} {
     lassign [dict get $::analog_lens::workspace_choices $::analog_lens::workspace_choice] path slice
     set device [current_device]; set conditions [device_conditions $device]
     if {[list $path $slice] ni [find_saved_lookups $device $conditions]} {error {The selected lookup or device conditions changed. Use this device's conditions again.}}
-    set rows [parse_lut [read_text $path]]
-    set ::analog_lens::lut_rows $rows; set ::analog_lens::lut_file $path; set ::analog_lens::lut_slice $slice
+    load_lookup_file $path
+    set ::analog_lens::lut_slice $slice
     rebuild_lookup_filters; set ::analog_lens::lookup_match_key {}
 }
 proc ::analog_lens::verification_value {value metric} {
@@ -384,6 +410,8 @@ proc ::analog_lens::build_verification_view {w} {
     dict unset ::analog_lens::workspace_render_key $w
     ttk::label $w.summary -textvariable ::analog_lens::verification_summary -style AL.Heading.TLabel -wraplength 400
     pack $w.summary -fill x -pady {0 8}; wrapping $w.summary
+    ttk::label $w.advice -textvariable ::analog_lens::verification_advice -wraplength 400
+    pack $w.advice -fill x -pady {0 8}; wrapping $w.advice
     ttk::treeview $w.table -columns {metric target before after error} -show headings -height 2 -selectmode none -style AL.Treeview
     foreach {key title} {metric Metric target Target before Before after After error {Error (%)}} {
         $w.table heading $key -text $title

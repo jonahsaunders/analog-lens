@@ -46,7 +46,7 @@ def main():
             if a.shape != shape:
                 raise ValueError(f'{field} has shape {a.shape}; expected L,VGS,VDS,VSB = {shape}. No guessed reshaping is performed.')
             arrays[field] = a
-        header = ['pdk','model','corner','temp_c','vds_v','vsb_v','length_um','total_width_um','id_a','gm_s','gds_s','cgg_total_f']
+        header = ['pdk','model','corner','temp_c','vds_v','vsb_v','length_um','total_width_um','id_a','gm_s','gds_s','cgg_total_f','vgs_v']
         with args.output.open('w', newline='', encoding='utf-8') as f:
             out = csv.writer(f); out.writerow(header)
             count = 0
@@ -58,7 +58,7 @@ def main():
                 if not all(np.isfinite(x) for x in vals):
                     continue
                 cgg = arrays['CGG'][index] if 'CGG' in arrays else ''
-                out.writerow([args.pdk,args.model,args.corner,args.temp_c,vds,vsb,l*(1e6 if args.length_unit=='m' else 1),args.total_width_um,*vals,cgg])
+                out.writerow([args.pdk,args.model,args.corner,args.temp_c,vds,vsb,l*(1e6 if args.length_unit=='m' else 1),args.total_width_um,*vals,cgg,vgs])
                 count += 1
         print(f'Wrote {count} samples to {args.output}')
     except (OSError, KeyError, ValueError, NotImplementedError, AttributeError) as exc:

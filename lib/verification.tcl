@@ -14,6 +14,7 @@ proc ::analog_lens::begin_verification {plan before} {
     dict set plan baseline $::analog_lens::baseline_choice
     dict set ::analog_lens::pending_verifications $key $plan
     set ::analog_lens::verification_result {}
+    set ::analog_lens::verification_advice {Run the updated circuit to compare the estimated bias with measured values.}
     set ::analog_lens::verification_summary {Awaiting verification · Run the updated circuit.}
 }
 proc ::analog_lens::verification_failed {state} {
@@ -59,6 +60,7 @@ proc ::analog_lens::verify_sizing_result {} {
     }
     if {$match eq {}} {set ::analog_lens::verification_summary {Not verified · Sized device is absent from the new results.}; return}
     set result [evaluate_targets $plan [get $match values]]
+    dict set result advice [sizing_diagnosis $plan [get $match values] [get $result state]]
     dict set result owner [get $plan owner]
     dict set result metadata $metadata
     dict set result plan $plan
@@ -75,8 +77,9 @@ proc ::analog_lens::verify_sizing_result {} {
 proc ::analog_lens::update_verification_text {} {
     set r $::analog_lens::verification_result
     set text $::analog_lens::verification_summary
+    set ::analog_lens::verification_advice [get $r advice]
     if {$r ne {}} {
-        append text "\n\n[ get $r conditions]\n\n"
+        append text "\n\n[ get $r conditions]\n\n[get $r advice]\n\n"
         foreach row [get $r rows] {
             set unit [expr {[get $row metric] eq "gm" ? "S" : "1/V"}]
             append text "[get $row metric]: [get $row state]\nTarget: [eng [get $row target] $unit]\nBefore: [eng [get $row before] $unit]\nMeasured: [eng [get $row measured] $unit]\nChange: [eng [get $row change] $unit]\n"

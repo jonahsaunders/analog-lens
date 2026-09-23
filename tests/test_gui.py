@@ -178,7 +178,10 @@ class NativeGUI(unittest.TestCase):
         self.assertEqual(len(self.c(W + '.tabs.lut.canvas.content.size.length', 'cget', '-values')), 2)
         self.assertEqual(str(self.get('target_gmid')), '16')
         traces = self.c('trace', 'info', 'variable', '::analog_lens::target_gmid')
-        self.assertEqual(len(traces), 1)
+        callbacks = [str(self.c('lindex', trace, 1)) for trace in traces]
+        self.assertEqual(callbacks.count('::analog_lens::invalidate_sizing'), 1)
+        self.assertEqual(callbacks.count('::analog_lens::target_to_display target_gmid'), 1)
+        self.assertEqual(len(traces), 2)
 
     def test_lookup_dialog_actions_survive_minimum_size(self):
         self.load_lut()

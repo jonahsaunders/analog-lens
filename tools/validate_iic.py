@@ -18,6 +18,7 @@ import subprocess
 import sys
 
 from check_iic import PDKS, configuration, parse_ascii_op
+from project_data import installed_corners
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = 'v {xschem version=3.4.7 file_version=1.2}\nG {}\nK {}\nV {}\nS {}\nE {}\n'
@@ -44,12 +45,16 @@ def symbol_pins(path):
 
 
 def labels(pins, dx=0, dy=0, ground=False):
-    return ''.join(f'C {{devices/lab_pin.sym}} {x+dx:g} {y+dy:g} 0 0 {{name=lab_{dx}_{name} lab={"0" if ground and name in ("s", "b") else name}}}\n'
+    return ''.join(f'C {{devices/lab_pin.sym}} {x+dx:g} {y+dy:g} 0 0 {{name=lab_{dx}_{name} lab={"0" if ground and name == "s" else name}}}\n'
                    for name, x, y in pins)
 
 
-def make_testbench(pdk, base, out):
-    includes, instance, _, _, vg, vd, _ = configuration(pdk, base, 'n')
+def make_testbench(pdk, base, out, polarity='n', corner=None, temp=27, vsb=0):
+    includes, instance, _, _, vg, vd, _ = configuration(pdk, base, polarity)
+    vd = abs(vd) * (-1 if polarity == 'p' else 1)
+    native_vds = -.7 if polarity == 'p' else .7
+    if corner:
+        includes = re.sub(r'(?m)^(\.lib\s+"[^"]+")\s+\S+', lambda m: m[1]+' '+corner, includes)
     model = instance.split()[5]
     candidates = sorted((base / 'libs.tech/xschem').rglob(model + '.sym'))
     if not candidates and model.startswith('sky130_fd_pr__'):
@@ -74,11 +79,11 @@ def make_testbench(pdk, base, out):
         child_symbol += f'B 5 {x-2} -2 {x+2} 2 {{name={pin} dir=inout}}\n'
         child_pins.append((pin, x, 0))
     (out / 'al_child.sym').write_text(child_symbol)
-    bias = (includes + f'\n.temp 27\nvg g 0 {vg}\nvd d 0 {vd}').replace('"', '\\"')
+    bias = (includes + f'\n.temp {temp}\nvg g 0 {vg}\nvd d 0 {vd}\nvb b 0 {-vsb}').replace('"', '\\"')
     top = HEADER + mos + labels(pins, ground=True)
     top += f'C {{{out / "al_child.sym"}}} 300 0 0 0 {{name=x1}}\n' + labels(child_pins, 300, ground=True)
     top += f'C {{devices/code_shown.sym}} -300 -250 0 0 {{name=BIAS only_toplevel=false value="{bias}"}}\n'
-    flow = '.control\nset filetype=ascii\nalter vd 0.7\nop\nwrite top.raw\nquit\n.endc'
+    flow = f'.control\nset filetype=ascii\nalter vd {native_vds}\nop\nwrite top.raw\nquit\n.endc'
     top += f'C {{devices/code_shown.sym}} -300 200 0 0 {{name=FLOW only_toplevel=true value="{flow}"}}\n'
     schematic = out / 'top.sch'; schematic.write_text(top)
     rc = out / 'xschemrc'
@@ -134,6 +139,7 @@ def main():
     parser.add_argument('--output', type=Path, default=Path('iic-validation'))
     parser.add_argument('--pdk-root', type=Path, default=Path(os.environ.get('PDK_ROOT', '/foss/pdks')))
     parser.add_argument('--require-all', action='store_true')
+    parser.add_argument('--pdks', nargs='+', choices=PDKS, default=list(PDKS))
     args = parser.parse_args()
     out = (args.output / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')).resolve()
     out.mkdir(parents=True)
@@ -157,7 +163,7 @@ def main():
         code = run_logged([sys.executable, str(ROOT/'tools/run_tests.py'), '--require-gui'], out/'tests.log')
         record('native-suite', 'passed' if code == 0 else 'failed')
         if code: print((out/'tests.log').read_text()[-10000:], flush=True)
-        command = [sys.executable, str(ROOT/'tools/check_iic.py'), '--pdk-root', str(args.pdk_root), '--output', str(out/'pdk')]
+        command = [sys.executable, str(ROOT/'tools/check_iic.py'), '--pdk-root', str(args.pdk_root), '--output', str(out/'pdk'), '--pdks', *args.pdks]
         if args.require_all: command.append('--require-all')
         code = run_logged(command, out/'pdk.log', timeout=900)
         record('ngspice-pdk-metrics', 'passed' if code == 0 else 'failed')
@@ -165,47 +171,61 @@ def main():
             print((out/'pdk.log').read_text()[-10000:], flush=True)
             for log in (out/'pdk').rglob('*.log'):
                 print(log.name, log.read_text()[-3000:], flush=True)
+        if 'sky130A' in args.pdks:
+            code = run_logged([sys.executable, str(ROOT/'tools/create_tutorial.py'), '--pdk-root', str(args.pdk_root),
+                               '--output', str(out/'tutorial')], out/'tutorial.log', timeout=300)
+            record('measured-sizing-tutorial', 'passed' if code == 0 else 'failed')
+            if code: print((out/'tutorial.log').read_text()[-5000:], flush=True)
     except (OSError, subprocess.TimeoutExpired) as exc:
         record('test-runner', 'failed', error=str(exc))
-    for pdk in PDKS:
+    for pdk in args.pdks:
         base = (args.pdk_root/pdk).resolve()
         if not base.is_dir():
             record(pdk+'-xschem', 'failed' if args.require_all else 'not-installed', error='PDK directory is missing')
             continue
-        directory = out/pdk; directory.mkdir()
-        try:
-            lookup = None; sweep = None
-            for polarity in ('n', 'p'):
-                _, instance, _, _, _, vd, _ = configuration(pdk, base, polarity)
+        for polarity in ('n', 'p'):
+            directory = out/pdk/(polarity+'mos'); directory.mkdir(parents=True)
+            try:
+                corners = installed_corners(base, pdk)
+                nominal = 'tt' if pdk.startswith('sky') else 'typical' if pdk.startswith('gf') else 'mos_tt'
+                # The PMOS flow also exercises an installed nonnominal corner,
+                # elevated temperature and reverse body bias.
+                preferred = 'ss' if pdk.startswith('sky') else 'ss' if pdk.startswith('gf') else 'mos_ss'
+                alternatives = [c for c in corners if c != nominal]
+                if polarity == 'p' and not alternatives:
+                    raise ValueError('No installed nonnominal corner available for PMOS coverage.')
+                corner = nominal if polarity == 'n' else preferred if preferred in alternatives else alternatives[0]
+                temp, vsb, vds = (27, 0, .7) if polarity == 'n' else (85, -.1, -.7)
+                _, instance, _, _, _, _, _ = configuration(pdk, base, polarity)
                 model = instance.split()[5]
-                csv_path = directory/(polarity+'mos-lookup.csv')
+                lookup = directory/(polarity+'mos-lookup.csv')
                 command = [sys.executable, str(ROOT/'tools/characterize.py'), '--pdk', pdk, '--model', model,
-                           '--pdk-root', str(args.pdk_root), '--lengths', '0.5', '1.0', '--vds', str(.7 if polarity=='n' else -.7),
-                           '--vgs-start', '0.2', '--vgs-step', '0.05', '--output', str(csv_path)]
-                code = run_logged(command, directory/(polarity+'mos-characterize.log'), timeout=300)
-                if code or not csv_path.is_file():
-                    raise ValueError(f'{polarity}MOS characterization failed: '+(directory/(polarity+'mos-characterize.log')).read_text()[-2500:])
-                manifest = json.loads(csv_path.with_suffix('.json').read_text())
-                record(pdk+'-'+polarity+'mos-characterization', 'passed', samples=sum(s['samples'] for s in manifest['sweeps']))
-                if polarity == 'n': lookup = csv_path; sweep = manifest['sweeps'][0]['raw']
-            schematic, rc = make_testbench(pdk, base, directory)
-            env = dict(os.environ, PDK=pdk, PDKPATH=str(base), SPICE_USERINIT_DIR=str(base/'libs.tech/ngspice'),
-                       ANALOG_LENS_ROOT=str(ROOT), ANALOG_LENS_OUTPUT=str(directory),
-                       ANALOG_LENS_LOOKUP=str(lookup), ANALOG_LENS_SWEEP=str(sweep))
-            code = run_logged(['xschem', '-r', '-s', '--rcfile', str(rc), '--script', str(ROOT/'tests/iic_live.tcl'), str(schematic)],
-                              directory/'xschem.log', env=env, cwd=directory, timeout=360)
-            if code or not (directory/'passed.txt').is_file():
-                raise ValueError('Live xschem checks failed; inspect xschem.log')
-            comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv', 'verification.csv')]
-            record(pdk+'-xschem', 'passed', comparisons=comparisons)
-        except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
-            record(pdk+'-xschem', 'failed', error=str(exc))
-            log = directory/'xschem.log'
-            if log.is_file(): print(log.read_text()[-10000:], flush=True)
-            # A failing GUI prerequisite can block every following PDK behind
-            # the same dialog. Retain this report and fail promptly for diagnosis.
-            print('Report:', report_path, flush=True)
-            return 1
+                           '--pdk-root', str(args.pdk_root), '--lengths', '0.5', '1.0', '--vds', str(vds),
+                           '--vsb', str(vsb), '--temp', str(temp), '--corner', corner,
+                           '--vgs-start', '0.2', '--vgs-step', '0.05', '--output', str(lookup)]
+                code = run_logged(command, directory/'characterize.log', timeout=300)
+                if code or not lookup.is_file():
+                    raise ValueError('Characterization failed: '+(directory/'characterize.log').read_text()[-2500:])
+                manifest = json.loads(lookup.with_suffix('.json').read_text())
+                record(pdk+'-'+polarity+'mos-characterization', 'passed', corner=corner, temp_c=temp, vsb_v=vsb,
+                       samples=sum(s['samples'] for s in manifest['sweeps']))
+                schematic, rc = make_testbench(pdk, base, directory, polarity, corner, temp, vsb)
+                env = dict(os.environ, PDK=pdk, PDKPATH=str(base), SPICE_USERINIT_DIR=str(base/'libs.tech/ngspice'),
+                           ANALOG_LENS_ROOT=str(ROOT), ANALOG_LENS_OUTPUT=str(directory),
+                           ANALOG_LENS_LOOKUP=str(lookup), ANALOG_LENS_SWEEP=manifest['sweeps'][0]['raw'],
+                           ANALOG_LENS_VDS=str(vds), ANALOG_LENS_VSB=str(vsb), ANALOG_LENS_TEMP=str(temp))
+                code = run_logged(['xschem', '-r', '-s', '--rcfile', str(rc), '--script', str(ROOT/'tests/iic_live.tcl'), str(schematic)],
+                                  directory/'xschem.log', env=env, cwd=directory, timeout=360)
+                if code or not (directory/'passed.txt').is_file():
+                    raise ValueError('Live xschem checks failed; inspect xschem.log')
+                comparisons = [compare_export_to_raw(directory/name) for name in ('top.csv', 'child.csv', 'native.csv', 'verification.csv')]
+                record(pdk+'-'+polarity+'mos-xschem', 'passed', corner=corner, temp_c=temp, vsb_v=vsb, comparisons=comparisons)
+            except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
+                record(pdk+'-'+polarity+'mos-xschem', 'failed', error=str(exc))
+                log = directory/'xschem.log'
+                if log.is_file(): print(log.read_text()[-10000:], flush=True)
+                print('Report:', report_path, flush=True)
+                return 1
     print('Report:', report_path)
     return 1 if any(check['status']=='failed' for check in report['checks']) else 0
 

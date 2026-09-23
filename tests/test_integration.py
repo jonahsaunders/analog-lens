@@ -389,6 +389,74 @@ class Integration(unittest.TestCase):
         self.c('dict','set','::analog_lens::result_metadata','observed_conditions','corner illustrative temp_c 27')
         self.call('update_freshness')
 
+    def test_lookup_edit_after_preview_blocks_apply_without_changing_geometry(self):
+        path = self.load_compatible(); self.current_metadata()
+        self.call('workspace_preview')
+        before = self.c('set', '::hostfixture::props')
+        path.write_text(path.read_text().replace('0.0008', '0.0009'))
+        # Always make a semantically changed CSV, even if fixture formatting changes.
+        import csv, io
+        rows = list(csv.DictReader(io.StringIO(path.read_text())))
+        rows[0]['gm_s'] = str(float(rows[0]['gm_s'])*1.1)
+        out = io.StringIO(); writer = csv.DictWriter(out, fieldnames=list(rows[0]))
+        writer.writeheader(); writer.writerows(rows); path.write_text(out.getvalue())
+        with self.assertRaisesRegex(tk.TclError, 'changed since loading'):
+            self.call('apply_size_plan')
+        self.assertEqual(self.c('set', '::hostfixture::props'), before)
+
+    def test_outdated_generated_lookup_blocks_preview_and_is_not_auto_selected(self):
+        import json
+        path = self.load_compatible(); self.current_metadata()
+        path.with_suffix('.json').write_text(json.dumps(dict(format='analog-lens-characterization',
+            schema=1, status='completed', csv_sha256='incorrect')))
+        with self.assertRaisesRegex(tk.TclError, 'Outdated lookup'):
+            self.call('make_size_plan')
+        self.call('use_device_conditions')
+        self.assertEqual(int(self.c('dict', 'size', self.get('workspace_choices'))), 0)
+
+    def test_primary_action_uses_structured_state_and_preview_status(self):
+        self.load_compatible(); self.current_metadata()
+        self.c('set', 'auto_execs(ngspice)', self.c('auto_execok', 'python3'))  # Availability fixture; no simulator is invoked.
+        device = self.call('current_device'); trust = self.c('dict', 'create', 'state', 'imported')
+        self.set('freshness', 'Translated presentation text')
+        next_step = self.call('workflow_next', device, trust)
+        self.assertIn('Preview', self.c('dict', 'get', next_step, 'label'))
+        self.call('workspace_preview')
+        next_step = self.call('workflow_next', device, trust)
+        self.assertIn('Apply & verify', self.c('dict', 'get', next_step, 'label'))
+        self.set('freshness_state', 'stale')
+        next_step = self.call('workflow_next', device, trust)
+        self.assertIn('Obtain', self.c('dict', 'get', next_step, 'label'))
+        self.c('set', 'auto_execs(ngspice)', '')
+        next_step = self.call('workflow_next', device, trust)
+        self.assertIn('Set up', self.c('dict', 'get', next_step, 'label'))
+
+    def test_dependency_poll_is_nonblocking_and_does_not_duplicate_workers(self):
+        model = self.directory/'model.lib'; model.write_text('.param fixture=1')
+        deck = self.directory/'run.spice'; deck.write_text('title\n.include model.lib\n')
+        metadata = self.call('dependency_snapshot', str(deck))
+        self.set('result_metadata', self.c('dict', 'merge', self.get('result_metadata'), metadata))
+        self.set('dependency_cache', '')
+        self.call('dependency_status')
+        first = self.get('dependency_cache')
+        self.assertEqual(int(self.c('dict', 'get', first, 'pending')), 1)
+        self.call('dependency_status')
+        self.assertEqual(self.c('dict', 'get', first, 'token'), self.c('dict', 'get', self.get('dependency_cache'), 'token'))
+        import time
+        end = time.monotonic()+5
+        while self.c('dict', 'exists', self.get('dependency_cache'), 'pending') and time.monotonic()<end:
+            self.app.update(); time.sleep(.01)
+        result = self.c('dict', 'get', self.get('dependency_cache'), 'result')
+        self.assertEqual(self.c('dict', 'get', result, 'state'), 'current')
+
+    def test_workspace_skips_render_when_inputs_have_not_changed(self):
+        self.load_compatible(); self.current_metadata(); self.call('refresh_workspace'); self.call('refresh_workspace')
+        self.app.tk.eval('set ::render_count 0; trace add execution ::analog_lens::render_verification_view enter {apply {{args} {incr ::render_count}}}')
+        self.call('refresh_workspace')
+        self.assertEqual(int(self.c('set', '::render_count')), 0)
+        self.set('target_gm_u', 900); self.call('refresh_workspace')
+        self.assertEqual(int(self.c('set', '::render_count')), 1)
+
     def test_device_conditions_clear_unknowns_and_preserve_body_bias_sign(self):
         self.load_compatible(); self.current_metadata()
         device=self.call('current_device')
